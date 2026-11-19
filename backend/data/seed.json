@@ -1,0 +1,119 @@
+{
+  "wallets": {
+    "user_101": {
+      "userId": "user_101",
+      "name": "Alice Smith",
+      "email": "alice.smith@example.com",
+      "balance": 1250.00,
+      "currency": "USD",
+      "status": "ACTIVE",
+      "tier": "PREMIUM",
+      "dailyLimit": 5000.00
+    },
+    "user_102": {
+      "userId": "user_102",
+      "name": "Bob Jones",
+      "email": "bob.jones@example.com",
+      "balance": 320.50,
+      "currency": "USD",
+      "status": "ACTIVE",
+      "tier": "STANDARD",
+      "dailyLimit": 2000.00
+    },
+    "user_103": {
+      "userId": "user_103",
+      "name": "Charlie Brown",
+      "email": "charlie.brown@example.com",
+      "balance": 45.00,
+      "currency": "USD",
+      "status": "FROZEN",
+      "tier": "STANDARD",
+      "dailyLimit": 500.00
+    }
+  },
+  "transfers": [
+    {
+      "transferId": "TRF-1001",
+      "referenceId": "REF-TRF-001",
+      "senderId": "user_101",
+      "senderName": "Alice Smith",
+      "recipientId": "user_102",
+      "recipientName": "Bob Jones",
+      "amount": 100.00,
+      "currency": "USD",
+      "status": "COMPLETED",
+      "description": "Dinner split from Saturday",
+      "timestamp": "2026-11-15T14:32:00.000Z",
+      "fee": 0.00
+    },
+    {
+      "transferId": "TRF-1002",
+      "referenceId": "REF-TRF-002",
+      "senderId": "user_102",
+      "senderName": "Bob Jones",
+      "recipientId": "user_101",
+      "recipientName": "Alice Smith",
+      "amount": 25.00,
+      "currency": "USD",
+      "status": "PENDING",
+      "description": "Coffee and donuts reimbursement",
+      "timestamp": "2026-11-17T09:15:00.000Z",
+      "fee": 0.00
+    },
+    {
+      "transferId": "TRF-1003",
+      "referenceId": "REF-TRF-003",
+      "senderId": "user_101",
+      "senderName": "Alice Smith",
+      "recipientId": "user_103",
+      "recipientName": "Charlie Brown",
+      "amount": 500.00,
+      "currency": "USD",
+      "status": "FAILED",
+      "failureReason": "Recipient account is FROZEN by compliance",
+      "description": "Rent contribution",
+      "timestamp": "2026-11-16T11:40:00.000Z",
+      "fee": 0.00
+    }
+  ],
+  "topups": [
+    {
+      "topupId": "TOP-5001",
+      "referenceId": "REF-TOP-001",
+      "userId": "user_101",
+      "userName": "Alice Smith",
+      "amount": 200.00,
+      "currency": "USD",
+      "paymentMethod": "VIRTUAL_ACCOUNT",
+      "virtualAccountNumber": "88019283746",
+      "bank": "Chase Bank",
+      "status": "SUCCESS",
+      "timestamp": "2026-11-14T08:20:00.000Z"
+    },
+    {
+      "topupId": "TOP-5002",
+      "referenceId": "REF-TOP-002",
+      "userId": "user_101",
+      "userName": "Alice Smith",
+      "amount": 50.00,
+      "currency": "USD",
+      "paymentMethod": "CREDIT_CARD",
+      "cardLast4": "4242",
+      "status": "PENDING",
+      "statusDetail": "Awaiting 3D Secure verification from card issuer",
+      "timestamp": "2026-11-17T11:00:00.000Z"
+    },
+    {
+      "topupId": "TOP-5003",
+      "referenceId": "REF-TOP-003",
+      "userId": "user_102",
+      "userName": "Bob Jones",
+      "amount": 100.00,
+      "currency": "USD",
+      "paymentMethod": "BANK_TRANSFER",
+      "bank": "Wells Fargo",
+      "status": "SUCCESS",
+      "timestamp": "2026-11-16T16:45:00.000Z"
+    }
+  ]
+}
