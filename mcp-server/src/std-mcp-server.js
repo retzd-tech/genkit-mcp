@@ -34,69 +34,37 @@ server.tool(
 );
 
 // TODO [Exercise 2.2]: Register check_transfer_status
-server.tool(
-  'check_transfer_status',
-  'Inquire transfer status, parties, timestamp, and failure reason (if any) using transfer ID or reference ID.',
-  CheckTransferStatusInput.shape,
-  async (args) => {
-    const result = await handlers.checkTransferStatus(args);
-    return {
-      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
-    };
-  }
-);
+// Hint:
+// server.tool(
+//   'check_transfer_status',
+//   'Inquire transfer status, parties, timestamp, and failure reason (if any) using transfer ID or reference ID.',
+//   CheckTransferStatusInput.shape,
+//   async (args) => {
+//     const result = await handlers.checkTransferStatus(args);
+//     return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+//   }
+// );
+// YOUR CODE HERE: Register check_transfer_status tool
 
 // TODO [Exercise 2.3]: Register check_topup_status
-server.tool(
-  'check_topup_status',
-  'Inquire top-up status, payment method, virtual account or settlement information by topup ID or reference ID.',
-  CheckTopupStatusInput.shape,
-  async (args) => {
-    const result = await handlers.checkTopupStatus(args);
-    return {
-      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
-    };
-  }
-);
+// Hint:
+// server.tool('check_topup_status', description, CheckTopupStatusInput.shape, async (args) => ...)
+// YOUR CODE HERE: Register check_topup_status tool
 
 // TODO [Exercise 2.4]: Register execute_transfer
-server.tool(
-  'execute_transfer',
-  'Execute a wallet-to-wallet transfer from sender to recipient. Deducts sender balance and credits recipient balance.',
-  ExecuteTransferInput.shape,
-  async (args) => {
-    const result = await handlers.executeTransfer(args);
-    return {
-      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
-    };
-  }
-);
+// Hint:
+// server.tool('execute_transfer', description, ExecuteTransferInput.shape, async (args) => ...)
+// YOUR CODE HERE: Register execute_transfer tool
 
 // TODO [Exercise 2.5]: Register initiate_topup
-server.tool(
-  'initiate_topup',
-  'Initiate a wallet balance top-up for a user via VIRTUAL_ACCOUNT, CREDIT_CARD, or BANK_TRANSFER.',
-  InitiateTopupInput.shape,
-  async (args) => {
-    const result = await handlers.initiateTopup(args);
-    return {
-      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
-    };
-  }
-);
+// Hint:
+// server.tool('initiate_topup', description, InitiateTopupInput.shape, async (args) => ...)
+// YOUR CODE HERE: Register initiate_topup tool
 
 // TODO [Exercise 2.6]: Register get_transaction_history
-server.tool(
-  'get_transaction_history',
-  'Retrieve recent transaction history (inflows, outflows, and topups) for a wallet user account.',
-  GetTransactionHistoryInput.shape,
-  async (args) => {
-    const result = await handlers.getTransactionHistory(args);
-    return {
-      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
-    };
-  }
-);
+// Hint:
+// server.tool('get_transaction_history', description, GetTransactionHistoryInput.shape, async (args) => ...)
+// YOUR CODE HERE: Register get_transaction_history tool
 
 async function main() {
   const transport = new StdioServerTransport();

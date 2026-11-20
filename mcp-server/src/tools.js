@@ -13,31 +13,27 @@ const GetWalletBalanceInput = z.object({
 // TODO [Exercise 1.2]: Define CheckTransferStatusInput schema
 // Requirements:
 // - transferId: z.string() with description (e.g. TRF-1001 or REF-TRF-001)
+// Hint: z.string().describe('The transfer ID (e.g. TRF-1001) or reference ID to check')
 const CheckTransferStatusInput = z.object({
-  // TODO: Add transferId field here
-  transferId: z.string().describe('The transfer ID (e.g. TRF-1001) or reference ID (e.g. REF-TRF-001) to check')
+  // YOUR CODE HERE: Add transferId field
 });
 
 // TODO [Exercise 1.3]: Define CheckTopupStatusInput schema
 // Requirements:
 // - topupId: z.string() with description (e.g. TOP-5001 or REF-TOP-001)
+// Hint: z.string().describe('The top-up ID (e.g. TOP-5001) or reference ID to check')
 const CheckTopupStatusInput = z.object({
-  // TODO: Add topupId field here
-  topupId: z.string().describe('The top-up ID (e.g. TOP-5001) or reference ID (e.g. REF-TOP-001) to check')
+  // YOUR CODE HERE: Add topupId field
 });
 
 // TODO [Exercise 1.4]: Define ExecuteTransferInput schema
 // Requirements:
-// - senderId: z.string()
-// - recipientId: z.string()
+// - senderId: z.string() (e.g. user_101)
+// - recipientId: z.string() (e.g. user_102)
 // - amount: z.number().positive()
 // - description: z.string().optional()
 const ExecuteTransferInput = z.object({
-  // TODO: Add fields here (refer to WORKSHOP_GUIDE.md Exercise 1.2)
-  senderId: z.string().describe('The wallet ID of the user sending the money (e.g. user_101)'),
-  recipientId: z.string().describe('The wallet ID of the recipient receiving the money (e.g. user_102)'),
-  amount: z.number().positive().describe('The amount of money to transfer (must be greater than 0)'),
-  description: z.string().optional().describe('Optional note or description for the transfer')
+  // YOUR CODE HERE: Add senderId, recipientId, amount, description fields
 });
 
 // TODO [Exercise 1.5]: Define InitiateTopupInput schema
@@ -46,10 +42,7 @@ const ExecuteTransferInput = z.object({
 // - amount: z.number().positive()
 // - paymentMethod: z.enum(['VIRTUAL_ACCOUNT', 'CREDIT_CARD', 'BANK_TRANSFER']).default('VIRTUAL_ACCOUNT')
 const InitiateTopupInput = z.object({
-  // TODO: Add fields here (refer to WORKSHOP_GUIDE.md Exercise 1.2)
-  userId: z.string().describe('The wallet user ID to be credited (e.g. user_101)'),
-  amount: z.number().positive().describe('The amount to top up into the wallet'),
-  paymentMethod: z.enum(['VIRTUAL_ACCOUNT', 'CREDIT_CARD', 'BANK_TRANSFER']).default('VIRTUAL_ACCOUNT').describe('Preferred payment channel')
+  // YOUR CODE HERE: Add userId, amount, paymentMethod fields
 });
 
 // TODO [Exercise 1.6]: Define GetTransactionHistoryInput schema
@@ -57,9 +50,7 @@ const InitiateTopupInput = z.object({
 // - userId: z.string()
 // - limit: z.number().min(1).max(50).default(10).optional()
 const GetTransactionHistoryInput = z.object({
-  // TODO: Add fields here (refer to WORKSHOP_GUIDE.md Exercise 1.2)
-  userId: z.string().describe('The wallet user ID whose history is being requested'),
-  limit: z.number().min(1).max(50).default(10).optional().describe('Maximum number of recent transactions to return')
+  // YOUR CODE HERE: Add userId and limit fields
 });
 
 // ============================================================================
@@ -90,136 +81,80 @@ const handlers = {
   },
 
   // TODO [Exercise 1.8]: Implement checkTransferStatus
+  // Requirements:
+  // 1. Validate transferId
+  // 2. Call await apiClient.getTransferStatus(transferId)
+  // 3. Return object with transferId, status, sender (senderName), recipient (recipientName), amount, etc.
   async checkTransferStatus(args = {}) {
     const { transferId } = args || {};
     if (!transferId) return { success: false, error: 'transferId is required' };
-    try {
-      const transfer = await apiClient.getTransferStatus(transferId);
-      return {
-        success: true,
-        transferId: transfer.transferId,
-        referenceId: transfer.referenceId,
-        status: transfer.status,
-        sender: transfer.senderName,
-        recipient: transfer.recipientName,
-        amount: transfer.amount,
-        currency: transfer.currency,
-        formattedAmount: `$${transfer.amount.toFixed(2)} ${transfer.currency}`,
-        description: transfer.description,
-        timestamp: transfer.timestamp,
-        failureReason: transfer.failureReason || null
-      };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
+    
+    // YOUR CODE HERE:
+    // const transfer = await apiClient.getTransferStatus(transferId);
+    // return { success: true, ... };
+    throw new Error('checkTransferStatus handler is not yet implemented. Complete Exercise 1.8 in mcp-server/src/tools.js!');
   },
 
   // TODO [Exercise 1.9]: Implement checkTopupStatus
+  // Requirements:
+  // 1. Validate topupId
+  // 2. Call await apiClient.getTopupStatus(topupId)
+  // 3. Return object with topupId, amount, status, paymentMethod, virtualAccountNumber, etc.
   async checkTopupStatus(args = {}) {
     const { topupId } = args || {};
     if (!topupId) return { success: false, error: 'topupId is required' };
-    try {
-      const topup = await apiClient.getTopupStatus(topupId);
-      return {
-        success: true,
-        topupId: topup.topupId,
-        referenceId: topup.referenceId,
-        userId: topup.userId,
-        userName: topup.userName,
-        amount: topup.amount,
-        currency: topup.currency,
-        formattedAmount: `$${topup.amount.toFixed(2)} ${topup.currency}`,
-        paymentMethod: topup.paymentMethod,
-        status: topup.status,
-        statusDetail: topup.statusDetail || (topup.status === 'SUCCESS' ? 'Funds successfully credited' : 'Pending payment confirmation'),
-        virtualAccountNumber: topup.virtualAccountNumber || null,
-        bank: topup.bank || null,
-        timestamp: topup.timestamp
-      };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
+
+    // YOUR CODE HERE:
+    // const topup = await apiClient.getTopupStatus(topupId);
+    // return { success: true, ... };
+    throw new Error('checkTopupStatus handler is not yet implemented. Complete Exercise 1.9 in mcp-server/src/tools.js!');
   },
 
   // TODO [Exercise 1.10]: Implement executeTransfer
+  // Requirements:
+  // 1. Validate senderId, recipientId, amount
+  // 2. Call await apiClient.executeTransfer({ senderId, recipientId, amount, description })
+  // 3. Return transfer details, formattedAmount, remainingBalance, etc.
   async executeTransfer(args = {}) {
     const { senderId, recipientId, amount, description } = args || {};
     if (!senderId || !recipientId || !amount) {
       return { success: false, error: 'senderId, recipientId, and positive amount are required' };
     }
-    try {
-      const transfer = await apiClient.transferFunds({ senderId, recipientId, amount, description });
-      return {
-        success: true,
-        transferId: transfer.transferId,
-        referenceId: transfer.referenceId,
-        senderId: transfer.senderId,
-        senderName: transfer.senderName,
-        recipientId: transfer.recipientId,
-        recipientName: transfer.recipientName,
-        amount: transfer.amount,
-        currency: transfer.currency,
-        formattedAmount: `$${transfer.amount.toFixed(2)} ${transfer.currency}`,
-        remainingBalance: transfer.remainingBalance,
-        formattedRemainingBalance: `$${transfer.remainingBalance.toFixed(2)} ${transfer.currency}`,
-        timestamp: transfer.timestamp
-      };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
+
+    // YOUR CODE HERE:
+    // const res = await apiClient.executeTransfer({ senderId, recipientId, amount, description });
+    // return { success: true, ... };
+    throw new Error('executeTransfer handler is not yet implemented. Complete Exercise 1.10 in mcp-server/src/tools.js!');
   },
 
   // TODO [Exercise 1.11]: Implement initiateTopup
+  // Requirements:
+  // 1. Validate userId, amount
+  // 2. Call await apiClient.initiateTopup({ userId, amount, paymentMethod })
+  // 3. Return paymentInstructions, virtualAccountNumber, etc.
   async initiateTopup(args = {}) {
     const { userId, amount, paymentMethod } = args || {};
     if (!userId || !amount) {
       return { success: false, error: 'userId and positive amount are required' };
     }
-    try {
-      const topup = await apiClient.initiateTopup({ userId, amount, paymentMethod });
-      return {
-        success: true,
-        topupId: topup.topupId,
-        referenceId: topup.referenceId,
-        userId: topup.userId,
-        amount: topup.amount,
-        currency: topup.currency,
-        formattedAmount: `$${topup.amount.toFixed(2)} ${topup.currency}`,
-        paymentMethod: topup.paymentMethod,
-        status: topup.status,
-        paymentInstructions: topup.paymentInstructions,
-        timestamp: topup.timestamp
-      };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
+
+    // YOUR CODE HERE:
+    // const topup = await apiClient.initiateTopup({ userId, amount, paymentMethod });
+    // return { success: true, ... };
+    throw new Error('initiateTopup handler is not yet implemented. Complete Exercise 1.11 in mcp-server/src/tools.js!');
   },
 
   // TODO [Exercise 1.12]: Implement getTransactionHistory
+  // Requirements:
+  // 1. Call await apiClient.getTransactionHistory(userId, limit)
+  // 2. Return list of formatted transactions with directional signs (+ / -)
   async getTransactionHistory(args = {}) {
     const { userId = 'user_101', limit = 10 } = args || {};
-    try {
-      const transactions = await apiClient.getTransactions(userId, limit);
-      return {
-        success: true,
-        userId,
-        count: transactions.length,
-        transactions: transactions.map((tx) => ({
-          id: tx.id,
-          referenceId: tx.referenceId,
-          type: tx.type,
-          counterparty: tx.counterparty,
-          amount: tx.amount,
-          currency: tx.currency,
-          formattedAmount: `${tx.amount < 0 ? '-' : '+'}$${Math.abs(tx.amount).toFixed(2)} ${tx.currency}`,
-          status: tx.status,
-          description: tx.description,
-          timestamp: tx.timestamp
-        }))
-      };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
+
+    // YOUR CODE HERE:
+    // const transactions = await apiClient.getTransactionHistory(userId, limit);
+    // return { success: true, transactions: ... };
+    throw new Error('getTransactionHistory handler is not yet implemented. Complete Exercise 1.12 in mcp-server/src/tools.js!');
   }
 };
 

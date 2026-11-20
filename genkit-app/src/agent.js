@@ -63,175 +63,24 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
     };
   }
 
-  // 2. Top-up Status check: "status of topup TOP-5001" or "check topup status"
-  const topupMatch = q.match(/\b(TOP-\d+|REF-TOP-\d+)\b/i);
-  if (lower.includes('topup') || lower.includes('top up') || lower.includes('top-up')) {
-    if (lower.includes('status') || lower.includes('what is happening') || topupMatch) {
-      const topupId = topupMatch ? topupMatch[1] : 'TOP-5002';
-      const result = await checkTopupStatusTool({ topupId });
-      let text = '';
-      if (result.success) {
-        text = `Here is the status for Top-up **${result.topupId}** (Ref: ${result.referenceId}):\n` +
-               `- **Status**: ${result.status === 'SUCCESS' ? '✅ SUCCESS' : result.status === 'PENDING' ? '⏳ PENDING' : '❌ FAILED'}\n` +
-               `- **Account Holder**: ${result.userName}\n` +
-               `- **Amount**: ${result.formattedAmount}\n` +
-               `- **Payment Method**: ${result.paymentMethod}\n` +
-               `- **Detail**: ${result.statusDetail}`;
-        if (result.virtualAccountNumber) {
-          text += `\n- **Virtual Account**: ${result.virtualAccountNumber} (${result.bank || 'Bank Partner'})`;
-        }
-      } else {
-        text = `❌ Could not find top-up with ID "${topupId}": ${result.error}`;
-      }
-      return {
-        toolCalled: 'check_topup_status',
-        toolArgs: { topupId },
-        toolResult: result,
-        response: text
-      };
-    }
+  // TODO [Exercise 4.2 - Branch 2]: Top-up Status check & Initiate Top-up
+  // Hint:
+  // - Check status if prompt has "status" or "what is happening" or matches /\b(TOP-\d+|REF-TOP-\d+)\b/i
+  // - Initiate top-up if prompt has "top up $X using virtual account"
+  // YOUR CODE HERE (refer to HANDS_ON_WORKSHOP.md Exercise 4)
 
-    // Initiate Top-up: "top up $100 using virtual account"
-    const amountMatch = q.match(/\$?\s*(\d+(\.\d{1,2})?)/);
-    const amount = amountMatch ? parseFloat(amountMatch[1]) : 50.00;
-    let paymentMethod = 'VIRTUAL_ACCOUNT';
-    if (lower.includes('credit') || lower.includes('card')) paymentMethod = 'CREDIT_CARD';
-    if (lower.includes('bank transfer')) paymentMethod = 'BANK_TRANSFER';
+  // TODO [Exercise 4.2 - Branch 3]: Inquire History or Latest Transfer
+  // Hint:
+  // - Check if prompt includes 'history', 'transactions', 'statement', 'latest'
+  // - Query getTransactionHistoryTool({ userId, limit: 10 })
+  // YOUR CODE HERE (refer to HANDS_ON_WORKSHOP.md Exercise 4)
 
-    const userMatch = q.match(/user_\d+/i);
-    const userId = userMatch ? userMatch[0] : defaultUserId;
-
-    const result = await initiateTopupTool({ userId, amount, paymentMethod });
-    let text = '';
-    if (result.success) {
-      text = `✅ Top-up request **${result.topupId}** created successfully for **${result.formattedAmount}**.\n` +
-             `- **Payment Method**: ${result.paymentMethod}\n` +
-             `- **Status**: ⏳ ${result.status}\n`;
-      if (result.paymentInstructions.virtualAccountNumber) {
-        text += `- **Virtual Account Number**: \`${result.paymentInstructions.virtualAccountNumber}\` (${result.paymentInstructions.bank})\n` +
-                `- **Valid until**: ${new Date(result.paymentInstructions.expiryTime).toLocaleString()}`;
-      } else if (result.paymentInstructions.checkoutUrl) {
-        text += `- **Payment Link**: ${result.paymentInstructions.checkoutUrl}`;
-      }
-    } else {
-      text = `❌ Failed to initiate top-up: ${result.error}`;
-    }
-    return {
-      toolCalled: 'initiate_topup',
-      toolArgs: { userId, amount, paymentMethod },
-      toolResult: result,
-      response: text
-    };
-  }
-
-  // 3. Inquire History or Latest Transfer: "latest transfer", "last transfer", "recent transactions", "history", "statement"
-  const isHistoryOrLatest = lower.includes('history') ||
-                            lower.includes('transactions') ||
-                            lower.includes('statement') ||
-                            lower.includes('past') ||
-                            lower.includes('latest') ||
-                            lower.includes('last') ||
-                            lower.includes('recent');
-
-  if (isHistoryOrLatest && !lower.includes('send') && !lower.includes('pay to')) {
-    const userMatch = q.match(/user_\d+/i);
-    const userId = userMatch ? userMatch[0] : defaultUserId;
-    const result = await getTransactionHistoryTool({ userId, limit: 10 });
-
-    let text = '';
-    if (result.success) {
-      if (lower.includes('transfer')) {
-        // Find latest transfer specifically
-        const latestTransfer = result.transactions.find(
-          (tx) => tx.type === 'TRANSFER_OUT' || tx.type === 'TRANSFER_IN'
-        );
-        if (latestTransfer) {
-          text = `📋 **Your Latest Transfer (${latestTransfer.id})**:\n` +
-                 `- **Status**: ${latestTransfer.status === 'COMPLETED' ? '✅ COMPLETED' : latestTransfer.status === 'PENDING' ? '⏳ PENDING' : '❌ ' + latestTransfer.status}\n` +
-                 `- **Type**: ${latestTransfer.type === 'TRANSFER_OUT' ? 'Sent (Outflow)' : 'Received (Inflow)'}\n` +
-                 `- **Amount**: ${latestTransfer.formattedAmount}\n` +
-                 `- **Counterparty**: ${latestTransfer.counterparty}\n` +
-                 `- **Note**: ${latestTransfer.description}\n` +
-                 `- **Date**: ${new Date(latestTransfer.timestamp).toLocaleString()}`;
-        } else {
-          text = `No recent transfers found for ${userId}.`;
-        }
-      } else {
-        // Show general transaction ledger
-        text = `📜 **Recent Transactions** (${Math.min(5, result.transactions.length)} entries):\n`;
-        result.transactions.slice(0, 5).forEach((tx, idx) => {
-          const symbol = tx.type === 'TRANSFER_OUT' ? '📤' : tx.type === 'TRANSFER_IN' ? '📥' : '💳';
-          text += `${idx + 1}. ${symbol} **${tx.id}** [${tx.status}] - **${tx.formattedAmount}**\n` +
-                  `   ${tx.description || tx.counterparty} • ${new Date(tx.timestamp).toLocaleDateString()}\n`;
-        });
-      }
-    } else {
-      text = `❌ Could not fetch transaction history: ${result.error}`;
-    }
-
-    return {
-      toolCalled: 'get_transaction_history',
-      toolArgs: { userId, limit: 10 },
-      toolResult: result,
-      response: text
-    };
-  }
-
-  // 4. Do Transfer: ONLY when explicit action intent ("transfer $50 to Bob", "send 30 to user_102")
-  if (lower.includes('transfer') || lower.includes('send') || lower.includes('pay')) {
-    const amountMatch = q.match(/\$?\s*(\d+(\.\d{1,2})?)/);
-    const recipientMatch = q.match(/(?:to\s+)(user_\d+|bob|charlie|alice)/i);
-
-    // Guard: If user didn't specify amount or recipient, ask for details instead of blindly sending money
-    if (!amountMatch) {
-      return {
-        toolCalled: 'none',
-        toolArgs: {},
-        toolResult: null,
-        response: `❓ How much would you like to transfer, and to whom? Please specify the amount and recipient (e.g., *"Transfer $50 to Bob"* or *"Send $30 to user_102"*).`
-      };
-    }
-
-    const amount = parseFloat(amountMatch[1]);
-    let recipientId = 'user_102'; // default Bob if specified
-    if (recipientMatch) {
-      const nameOrId = recipientMatch[1].toLowerCase();
-      if (nameOrId === 'bob' || nameOrId === 'user_102') recipientId = 'user_102';
-      else if (nameOrId === 'charlie' || nameOrId === 'user_103') recipientId = 'user_103';
-      else if (nameOrId === 'alice' || nameOrId === 'user_101') recipientId = 'user_101';
-      else recipientId = nameOrId;
-    }
-
-    const senderMatch = q.match(/(?:from\s+)(user_\d+)/i);
-    const senderId = senderMatch ? senderMatch[1] : defaultUserId;
-
-    const result = await executeTransferTool({
-      senderId,
-      recipientId,
-      amount,
-      description: `Transfer initiated via Genkit Assistant: "${q}"`
-    });
-
-    let text = '';
-    if (result.success) {
-      text = `🎉 **Transfer Successful!**\n` +
-             `- **Transaction ID**: ${result.transferId}\n` +
-             `- **Amount Sent**: ${result.formattedAmount}\n` +
-             `- **From**: ${result.senderName}\n` +
-             `- **To**: ${result.recipientName}\n` +
-             `- **Your Remaining Balance**: **${result.formattedRemainingBalance}**\n` +
-             `- **Timestamp**: ${new Date(result.timestamp).toLocaleString()}`;
-    } else {
-      text = `❌ **Transfer Failed**: ${result.error}`;
-    }
-
-    return {
-      toolCalled: 'execute_transfer',
-      toolArgs: { senderId, recipientId, amount },
-      toolResult: result,
-      response: text
-    };
-  }
+  // TODO [Exercise 4.2 - Branch 4]: Execute Money Transfer
+  // Hint:
+  // - Check if prompt includes 'transfer', 'send', 'pay'
+  // - Guard: if no amount specified, prompt user for details!
+  // - Parse amount and recipient, call executeTransferTool
+  // YOUR CODE HERE (refer to HANDS_ON_WORKSHOP.md Exercise 4)
 
   // 5. Balance Inquiry: default
   const userMatch = q.match(/user_\d+/i);

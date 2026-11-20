@@ -24,7 +24,16 @@ const getWalletBalanceTool = ai.defineTool(
   async (input) => handlers.getWalletBalance(input)
 );
 
-// TODO [Exercise 3.2]: Tool: check_transfer_status
+// TODO [Exercise 3.2]: Register check_transfer_status with ai.defineTool
+// Hint:
+// const checkTransferStatusTool = ai.defineTool(
+//   {
+//     name: 'check_transfer_status',
+//     description: 'Inquire transfer status, parties, timestamp, and failure reason (if any) using transfer ID or reference ID.',
+//     inputSchema: CheckTransferStatusInput,
+//   },
+//   async (input) => handlers.checkTransferStatus(input)
+// );
 const checkTransferStatusTool = ai.defineTool(
   {
     name: 'check_transfer_status',
@@ -34,45 +43,21 @@ const checkTransferStatusTool = ai.defineTool(
   async (input) => handlers.checkTransferStatus(input)
 );
 
-// TODO [Exercise 3.3]: Tool: check_topup_status
-const checkTopupStatusTool = ai.defineTool(
-  {
-    name: 'check_topup_status',
-    description: 'Inquire top-up status, payment method, virtual account or settlement information by topup ID or reference ID.',
-    inputSchema: CheckTopupStatusInput,
-  },
-  async (input) => handlers.checkTopupStatus(input)
-);
+// TODO [Exercise 3.3]: Register check_topup_status with ai.defineTool
+// YOUR CODE HERE (follow Exercise 3.2 pattern)
+const checkTopupStatusTool = null; // Replace with ai.defineTool(...)
 
-// TODO [Exercise 3.4]: Tool: execute_transfer
-const executeTransferTool = ai.defineTool(
-  {
-    name: 'execute_transfer',
-    description: 'Execute a wallet-to-wallet transfer from sender to recipient. Deducts sender balance and credits recipient balance.',
-    inputSchema: ExecuteTransferInput,
-  },
-  async (input) => handlers.executeTransfer(input)
-);
+// TODO [Exercise 3.4]: Register execute_transfer with ai.defineTool
+// YOUR CODE HERE (follow Exercise 3.2 pattern)
+const executeTransferTool = null; // Replace with ai.defineTool(...)
 
-// TODO [Exercise 3.5]: Tool: initiate_topup
-const initiateTopupTool = ai.defineTool(
-  {
-    name: 'initiate_topup',
-    description: 'Initiate a wallet balance top-up for a user via VIRTUAL_ACCOUNT, CREDIT_CARD, or BANK_TRANSFER.',
-    inputSchema: InitiateTopupInput,
-  },
-  async (input) => handlers.initiateTopup(input)
-);
+// TODO [Exercise 3.5]: Register initiate_topup with ai.defineTool
+// YOUR CODE HERE (follow Exercise 3.2 pattern)
+const initiateTopupTool = null; // Replace with ai.defineTool(...)
 
-// TODO [Exercise 3.6]: Tool: get_transaction_history
-const getTransactionHistoryTool = ai.defineTool(
-  {
-    name: 'get_transaction_history',
-    description: 'Retrieve recent transaction history (inflows, outflows, and topups) for a wallet user account.',
-    inputSchema: GetTransactionHistoryInput,
-  },
-  async (input) => handlers.getTransactionHistory(input)
-);
+// TODO [Exercise 3.6]: Register get_transaction_history with ai.defineTool
+// YOUR CODE HERE (follow Exercise 3.2 pattern)
+const getTransactionHistoryTool = null; // Replace with ai.defineTool(...)
 
 // Create the Genkit MCP Server
 const mcpServer = createMcpServer(ai, {
