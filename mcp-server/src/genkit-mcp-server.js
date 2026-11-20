@@ -81,9 +81,9 @@ const mcpServer = createMcpServer(ai, {
 });
 
 async function run() {
-  console.log('[Genkit MCP] Starting Wallet Genkit MCP Server (stdio transport)...');
+  console.error('[Genkit MCP] Starting Wallet Genkit MCP Server (stdio transport)...');
   await mcpServer.start();
-  console.log('[Genkit MCP] Server listening for MCP requests via stdio.');
+  console.error('[Genkit MCP] Server listening for MCP requests via stdio.');
 }
 
 if (require.main === module) {
