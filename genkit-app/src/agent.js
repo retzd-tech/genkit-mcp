@@ -23,6 +23,10 @@ const walletTools = [
   getTransactionHistoryTool
 ];
 
+// ============================================================================
+// WORKSHOP EXERCISE 4: AI Agent Orchestration Flow & Reasoning Engine
+// ============================================================================
+
 /**
  * Intelligent pattern matcher for offline / zero-API-key demonstration mode.
  * Identifies intent and parameters from user's natural language question.
@@ -31,7 +35,7 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
   const q = query.trim();
   const lower = q.toLowerCase();
 
-  // 1. Transfer Status check: "check transfer status TRF-1002" or "status of TRF-1001" or "REF-TRF-001"
+  // TODO [Exercise 4.2 - Branch 1]: Transfer Status check
   const trfMatch = q.match(/\b(TRF-\d+|REF-TRF-\d+)\b/i);
   if ((lower.includes('transfer') && (lower.includes('status') || lower.includes('check'))) || trfMatch) {
     const transferId = trfMatch ? trfMatch[1] : 'TRF-1002';
