@@ -13,6 +13,11 @@ app.use(express.json());
 // Serve static assets for Devfest Wallet Mobile Web UI
 app.use(express.static(path.join(__dirname, '../../public')));
 
+// Silence common browser & devtools probes
+app.get(['/sw.js', '/favicon.ico', '/.well-known*'], (req, res) => {
+  res.status(204).end();
+});
+
 // Request logger
 app.use((req, res, next) => {
   const start = Date.now();
