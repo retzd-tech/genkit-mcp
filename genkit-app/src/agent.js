@@ -1,3 +1,8 @@
+const dns = require('dns');
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch (e) {}
+
 const { z } = require('genkit');
 const { ai } = require('./genkit');
 const {
@@ -106,6 +111,49 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
   };
 }
 
+/**
+ * Fast-path handler for pleasantries, greetings, and acknowledgments.
+ * Responds in < 5ms without LLM latency or unnecessary tool execution.
+ */
+function getPleasantryResponse(query) {
+  const q = query.trim().toLowerCase();
+  const clean = q.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?!👍🎉🙏😊❤️]/g, '').trim();
+
+  // If query mentions financial wallet actions, let the agent/tools handle it
+  const hasFinancialIntent = /\b(saldo|balance|uang|dollar|usd|\$|transfer|kirim|send|pay|bayar|topup|top up|isi|kartu|rekening|history|riwayat|trf|top|status)\b/i.test(q);
+  if (hasFinancialIntent) return null;
+
+  // Gratitude / Thank you
+  const thanksPatterns = [
+    'terima kasih', 'terimakasih', 'makasih', 'makasi', 'mksh', 'tq',
+    'thank you', 'thanks', 'thx', 'maturnuwun', 'hatur nuhun', 'nuhun', 'arigato'
+  ];
+  if (thanksPatterns.some((pattern) => clean === pattern || clean.includes(pattern))) {
+    return 'Sama-sama! Senang bisa membantu Anda. Jika ada transaksi atau bantuan lain seputar dompet digital Anda, silakan beri tahu ya! 😊';
+  }
+
+  // Greetings
+  const greetingPatterns = [
+    'halo', 'hi', 'hai', 'hello', 'hey', 'hei',
+    'selamat pagi', 'selamat siang', 'selamat sore', 'selamat malam',
+    'pagi', 'siang', 'sore', 'malam'
+  ];
+  if (greetingPatterns.some((pattern) => clean === pattern || clean.startsWith(pattern + ' '))) {
+    return 'Halo! Saya asisten dompet digital Devfest Wallet. Ada yang bisa saya bantu hari ini? Anda dapat mengecek saldo, melakukan transfer dana, top up, atau melihat riwayat transaksi.';
+  }
+
+  // Acknowledgments / Closing
+  const ackPatterns = [
+    'mantap', 'mantul', 'keren', 'sip', 'siap', 'ok', 'oke', 'okay', 'baik', 'baiklah',
+    'good', 'great', 'awesome', 'nice', 'sama-sama', 'sama sama', 'bye', 'dadah'
+  ];
+  if (ackPatterns.some((pattern) => clean === pattern || clean.startsWith(pattern + ' '))) {
+    return 'Siap! Jika Anda butuh bantuan transaksi lain atau ingin mengecek saldo dompet digital Anda, silakan tanyakan kapan saja.';
+  }
+
+  return null;
+}
+
 // Define Genkit Flow for Wallet Assistant
 const walletAssistantFlow = ai.defineFlow(
   {
@@ -122,13 +170,33 @@ const walletAssistantFlow = ai.defineFlow(
     })
   },
   async ({ query, userId }) => {
-    // If Gemini API Key is available, use LLM generation with tools
+    // 1. Instant Fast Path: Pleasantries, gratitude, and greetings (sub-millisecond latency)
+    const pleasantry = getPleasantryResponse(query);
+    if (pleasantry) {
+      return {
+        query,
+        response: pleasantry,
+        toolCalls: [],
+        data: { mode: 'instant-conversational' }
+      };
+    }
+
+    // 2. If Gemini API Key is available, use LLM generation with tools
     if (hasApiKey) {
       try {
         const { googleAI } = require('@genkit-ai/google-genai');
-        const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash-lite';
+        const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
         const llmResponse = await ai.generate({
-          model: googleAI.model(modelName),
+          model: googleAI.model(modelName, {
+            thinkingConfig: {
+              thinkingLevel: 'LOW'
+            }
+          }),
+          config: {
+            thinkingConfig: {
+              thinkingLevel: 'LOW'
+            }
+          },
           prompt: `You are an intelligent, helpful payment & digital wallet assistant.
 The active authenticated user is "${userId || 'user_101'}".
 Use the available tools to inspect balance, check transfer status, check top-up status, execute fund transfers, initiate top-ups, or get transaction history.
@@ -155,7 +223,7 @@ User Query: ${query}`,
       }
     }
 
-    // Default fast & reliable reasoning engine
+    // 3. Simulated reasoning engine fallback
     const simulation = await simulateAgentReasoning(query, userId || 'user_101');
     return {
       query,
