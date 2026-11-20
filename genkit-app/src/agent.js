@@ -69,7 +69,7 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
       if (result.success) {
         text = `Here is the status for Top-up **${result.topupId}** (Ref: ${result.referenceId}):\n` +
                `- **Status**: ${result.status === 'SUCCESS' ? '✅ SUCCESS' : result.status === 'PENDING' ? '⏳ PENDING' : '❌ FAILED'}\n` +
-               `- **User**: ${result.userName} (${result.userId})\n` +
+               `- **Account Holder**: ${result.userName}\n` +
                `- **Amount**: ${result.formattedAmount}\n` +
                `- **Payment Method**: ${result.paymentMethod}\n` +
                `- **Detail**: ${result.statusDetail}`;
@@ -154,7 +154,7 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
         }
       } else {
         // Show general transaction ledger
-        text = `📜 **Recent Transactions for ${userId}** (${Math.min(5, result.transactions.length)} entries):\n`;
+        text = `📜 **Recent Transactions** (${Math.min(5, result.transactions.length)} entries):\n`;
         result.transactions.slice(0, 5).forEach((tx, idx) => {
           const symbol = tx.type === 'TRANSFER_OUT' ? '📤' : tx.type === 'TRANSFER_IN' ? '📥' : '💳';
           text += `${idx + 1}. ${symbol} **${tx.id}** [${tx.status}] - **${tx.formattedAmount}**\n` +
@@ -213,8 +213,8 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
       text = `🎉 **Transfer Successful!**\n` +
              `- **Transaction ID**: ${result.transferId}\n` +
              `- **Amount Sent**: ${result.formattedAmount}\n` +
-             `- **From**: ${result.senderName} (${result.senderId})\n` +
-             `- **To**: ${result.recipientName} (${result.recipientId})\n` +
+             `- **From**: ${result.senderName}\n` +
+             `- **To**: ${result.recipientName}\n` +
              `- **Your Remaining Balance**: **${result.formattedRemainingBalance}**\n` +
              `- **Timestamp**: ${new Date(result.timestamp).toLocaleString()}`;
     } else {
@@ -236,7 +236,7 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
 
   let text = '';
   if (result.success) {
-    text = `💼 **Wallet Summary for ${result.accountHolder} (${result.userId})**:\n` +
+    text = `💼 **Wallet Summary for ${result.accountHolder}**:\n` +
            `- **Current Balance**: **${result.formattedBalance}**\n` +
            `- **Account Status**: ${result.status === 'ACTIVE' ? '🟢 ACTIVE' : '🔴 ' + result.status}\n` +
            `- **Tier**: ${result.tier}\n` +
@@ -273,12 +273,19 @@ const walletAssistantFlow = ai.defineFlow(
     if (hasApiKey) {
       try {
         const { googleAI } = require('@genkit-ai/google-genai');
+        const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash-lite';
         const llmResponse = await ai.generate({
-          model: googleAI.model('gemini-1.5-flash'),
+          model: googleAI.model(modelName),
           prompt: `You are an intelligent, helpful payment & digital wallet assistant.
-The active user is "${userId || 'user_101'}".
+The active authenticated user is "${userId || 'user_101'}".
 Use the available tools to inspect balance, check transfer status, check top-up status, execute fund transfers, initiate top-ups, or get transaction history.
-Always provide clear, secure, and professional banking responses.
+Always provide clear, secure, and professional banking responses in the user's language.
+
+PRIVACY & SECURITY RULES:
+- Never disclose internal technical user IDs (such as "user_101", "user_102") in chat responses.
+- Address the user naturally by their name (e.g. Alice or Alice Smith) or simply say "your account" / "your balance".
+- Refer to counterparties by their names (e.g. Bob Jones).
+- Public transaction references (e.g. "TRF-1001", "TOP-5001", virtual account numbers) are safe to show.
 
 User Query: ${query}`,
           tools: walletTools

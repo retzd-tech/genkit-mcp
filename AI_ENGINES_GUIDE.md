@@ -47,7 +47,7 @@ flowchart TD
 | **Execution Environment** | 100% Local (Node.js runtime) | Hybrid (Local Genkit + Google Cloud AI API) |
 | **External Network Required** | None (Fully air-gapped) | Outbound HTTPS to `generativelanguage.googleapis.com` |
 | **API Key Required** | None ($0 cost, zero signup) | `GEMINI_API_KEY` (Free tier or Google Cloud billing) |
-| **Reasoning Model** | Deterministic Pattern & Entity Matcher | Deep Neural Network (`gemini-1.5-flash`) |
+| **Reasoning Model** | Deterministic Pattern & Entity Matcher | Deep Neural Network (`gemini-3.8-flash-lite`, configurable via `GEMINI_MODEL`) |
 | **Execution Latency** | 2 ms – 15 ms | 400 ms – 1,800 ms (network + token generation) |
 | **Tool Calling Mechanism** | Direct invocation of tool functions | Autonomous LLM function calling via Genkit |
 | **Input Flexibility** | Common phrasing, keywords, standard syntax | Freeform conversational phrasing, complex syntax, typos |
@@ -83,8 +83,9 @@ const walletAssistantFlow = ai.defineFlow(
     if (hasApiKey) {
       try {
         const { googleAI } = require('@genkit-ai/google-genai');
+        const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash-lite';
         const llmResponse = await ai.generate({
-          model: googleAI.model('gemini-1.5-flash'),
+          model: googleAI.model(modelName),
           prompt: `You are an intelligent, helpful payment & digital wallet assistant.
 The active user is "${userId || 'user_101'}".
 Use the available tools to inspect balance, check transfer status, check top-up status, execute fund transfers, initiate top-ups, or get transaction history.
@@ -269,7 +270,7 @@ if (lower.includes('topup') || lower.includes('top up') || lower.includes('top-u
     if (result.success) {
       text = `Here is the status for Top-up **${result.topupId}** (Ref: ${result.referenceId}):\n` +
              `- **Status**: ${result.status === 'SUCCESS' ? '✅ SUCCESS' : result.status === 'PENDING' ? '⏳ PENDING' : '❌ FAILED'}\n` +
-             `- **User**: ${result.userName} (${result.userId})\n` +
+             `- **Account Holder**: ${result.userName}\n` +
              `- **Amount**: ${result.formattedAmount}\n` +
              `- **Payment Method**: ${result.paymentMethod}\n` +
              `- **Detail**: ${result.statusDetail}`;
@@ -439,8 +440,8 @@ if (lower.includes('transfer') || lower.includes('send') || lower.includes('pay'
     text = `🎉 **Transfer Successful!**\n` +
            `- **Transaction ID**: ${result.transferId}\n` +
            `- **Amount Sent**: ${result.formattedAmount}\n` +
-           `- **From**: ${result.senderName} (${result.senderId})\n` +
-           `- **To**: ${result.recipientName} (${result.recipientId})\n` +
+           `- **From**: ${result.senderName}\n` +
+           `- **To**: ${result.recipientName}\n` +
            `- **Your Remaining Balance**: **${result.formattedRemainingBalance}**\n` +
            `- **Timestamp**: ${new Date(result.timestamp).toLocaleString()}`;
   } else {
@@ -475,7 +476,7 @@ const result = await getWalletBalanceTool({ userId });
 
 let text = '';
 if (result.success) {
-  text = `💼 **Wallet Summary for ${result.accountHolder} (${result.userId})**:\n` +
+  text = `💼 **Wallet Summary for ${result.accountHolder}**:\n` +
          `- **Current Balance**: **${result.formattedBalance}**\n` +
          `- **Account Status**: ${result.status === 'ACTIVE' ? '🟢 ACTIVE' : '🔴 ' + result.status}\n` +
          `- **Tier**: ${result.tier}\n` +
@@ -573,8 +574,9 @@ In [`genkit-app/src/agent.js`](genkit-app/src/agent.js):
 ```javascript
 if (hasApiKey) {
   const { googleAI } = require('@genkit-ai/google-genai');
+  const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash-lite';
   const llmResponse = await ai.generate({
-    model: googleAI.model('gemini-1.5-flash'),
+    model: googleAI.model(modelName),
     prompt: `You are an intelligent, helpful payment & digital wallet assistant.
 The active user is "${userId || 'user_101'}".
 Use the available tools to inspect balance, check transfer status, check top-up status, execute fund transfers, initiate top-ups, or get transaction history.
@@ -714,7 +716,7 @@ npm run chat
    * `"Could you please let me know Alice's remaining balance?"`
    * `"Hey assistant, I had lunch with Bob today. Please send him 25 bucks from my wallet."`
 2. The agent generates dynamic, conversational responses powered by Gemini.
-3. In the Genkit UI (`npm run ui` at `http://localhost:4000`), flow run traces will display `gemini-1.5-flash` model invocation spans and token consumption metrics.
+3. In the Genkit UI (`npm run ui` at `http://localhost:4000`), flow run traces will display model invocation spans (e.g. `gemini-3.8-flash-lite`) and token consumption metrics.
 
 ---
 

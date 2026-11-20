@@ -9,12 +9,12 @@ const rl = readline.createInterface({
 console.log('='.repeat(65));
 console.log('💳 Firebase Genkit MCP Wallet Assistant (Interactive Chat)');
 console.log('='.repeat(65));
-console.log('Logged in as: Alice Smith (user_101)');
+console.log('Logged in as: Alice Smith');
 console.log('Try asking:');
 console.log('  • "What is my current balance?"');
 console.log('  • "Check status of transfer TRF-1002"');
 console.log('  • "What is the status of top-up TOP-5002?"');
-console.log('  • "Transfer $35 to user_102 for lunch"');
+console.log('  • "Transfer $35 to Bob for lunch"');
 console.log('  • "I want to top up $50 using virtual account"');
 console.log('  • "Show my recent transaction history"');
 console.log('  • "exit" to quit');
