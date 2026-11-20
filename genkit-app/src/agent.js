@@ -160,7 +160,7 @@ function getPleasantryResponse(query) {
   return null;
 }
 
-function withTimeout(promise, ms = 8500) {
+function withTimeout(promise, ms = 25000) {
   return Promise.race([
     promise,
     new Promise((_, reject) =>
@@ -200,17 +200,19 @@ const walletAssistantFlow = ai.defineFlow(
       }
     }
 
-    // 2. If Gemini API Key is available, use LLM generation with automatic model fallback & multi-turn memory
+    // 2. If Gemini API Key is available, use LLM generation with modern Interactions API models
     if (hasApiKey) {
       const { googleAI } = require('@genkit-ai/google-genai');
-      const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
-      
-      // Fallback chain in case of Google 503 capacity spikes
+      const rawModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+      // Automatically sanitize legacy 2.5 models to the active gemini-3.5-flash-lite model
+      const primaryModel = rawModel.includes('2.5') ? 'gemini-3.5-flash-lite' : rawModel;
+
+      // Modern Interactions API models only (Google returns 404 for deprecated 2.5 models)
       const candidateModels = [
         primaryModel,
-        'gemini-2.5-flash',
-        'gemini-2.5-flash-lite',
-        'gemini-flash-latest'
+        'gemini-flash-latest',
+        'gemini-3.8-flash',
+        'gemini-flash-lite-latest'
       ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
       const systemPrompt = `You are Devfest Assistant, an intelligent, friendly, and helpful payment & digital wallet AI assistant.
@@ -251,9 +253,7 @@ CONVERSATIONAL TONE & LANGUAGE:
 
       for (const modelCandidate of candidateModels) {
         try {
-          const config = modelCandidate.includes('2.5')
-            ? { thinkingConfig: { thinkingBudget: 0 } }
-            : { thinkingConfig: { thinkingLevel: 'LOW' } };
+          const config = { thinkingConfig: { thinkingLevel: 'LOW' } };
 
           const llmResponse = await withTimeout(
             ai.generate({
@@ -264,7 +264,7 @@ CONVERSATIONAL TONE & LANGUAGE:
               prompt: query,
               tools: walletTools
             }),
-            8500 // Prevents SDK from hanging for 38+ seconds on 503 retries
+            25000 // 25s timeout allows 2-turn MCP function calls to complete smoothly
           );
 
           return {
