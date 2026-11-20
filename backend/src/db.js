@@ -43,10 +43,33 @@ class WalletDatabase {
     }
   }
 
+  // Helper: Find wallet by ID, Name, First Name, or Email
+  findWallet(query) {
+    if (!query) return null;
+    this.data = this.loadData();
+    const q = String(query).trim().toLowerCase();
+
+    // 1. Exact ID match (e.g. 'user_101')
+    if (this.data.wallets[query]) return this.data.wallets[query];
+    if (this.data.wallets[q]) return this.data.wallets[q];
+
+    // 2. Match by full name, first name, or email
+    for (const w of Object.values(this.data.wallets)) {
+      const wName = w.name.toLowerCase();
+      const wFirst = wName.split(' ')[0];
+      const wEmail = (w.email || '').toLowerCase();
+      if (w.userId.toLowerCase() === q) return w;
+      if (wName === q) return w;
+      if (wFirst === q) return w;
+      if (wEmail === q) return w;
+      if (wName.includes(q) || q.includes(wFirst)) return w;
+    }
+    return null;
+  }
+
   // 1. Get Wallet
   getWallet(userId) {
-    this.data = this.loadData();
-    const wallet = this.data.wallets[userId];
+    const wallet = this.findWallet(userId);
     if (!wallet) return null;
     return { ...wallet };
   }
@@ -62,14 +85,8 @@ class WalletDatabase {
     if (!senderId || !recipientId) {
       throw new Error('Both senderId and recipientId are required.');
     }
-    if (senderId === recipientId) {
-      throw new Error('Cannot transfer funds to the same wallet account.');
-    }
-    if (typeof amount !== 'number' || amount <= 0) {
-      throw new Error('Transfer amount must be a positive number.');
-    }
 
-    const sender = this.data.wallets[senderId];
+    const sender = this.findWallet(senderId);
     if (!sender) {
       throw new Error(`Sender wallet '${senderId}' does not exist.`);
     }
@@ -77,12 +94,22 @@ class WalletDatabase {
       throw new Error(`Sender wallet is ${sender.status}. Cannot perform transactions.`);
     }
 
-    const recipient = this.data.wallets[recipientId];
+    const recipient = this.findWallet(recipientId);
     if (!recipient) {
       throw new Error(`Recipient wallet '${recipientId}' does not exist.`);
     }
     if (recipient.status !== 'ACTIVE') {
       throw new Error(`Recipient wallet is ${recipient.status}. Cannot receive funds.`);
+    }
+
+    const resolvedSenderId = sender.userId;
+    const resolvedRecipientId = recipient.userId;
+
+    if (resolvedSenderId === resolvedRecipientId) {
+      throw new Error('Cannot transfer funds to the same wallet account.');
+    }
+    if (typeof amount !== 'number' || amount <= 0) {
+      throw new Error('Transfer amount must be a positive number.');
     }
 
     if (sender.balance < amount) {
@@ -99,9 +126,9 @@ class WalletDatabase {
     const transferRecord = {
       transferId,
       referenceId,
-      senderId,
+      senderId: resolvedSenderId,
       senderName: sender.name,
-      recipientId,
+      recipientId: resolvedRecipientId,
       recipientName: recipient.name,
       amount: parseFloat(amount.toFixed(2)),
       currency: sender.currency,
@@ -144,7 +171,7 @@ class WalletDatabase {
       throw new Error('Top-up amount must be a positive number.');
     }
 
-    const wallet = this.data.wallets[userId];
+    const wallet = this.findWallet(userId);
     if (!wallet) {
       throw new Error(`Wallet for user '${userId}' not found.`);
     }
@@ -152,6 +179,7 @@ class WalletDatabase {
       throw new Error(`Wallet is ${wallet.status}. Cannot perform top-up.`);
     }
 
+    const resolvedUserId = wallet.userId;
     const validMethods = ['VIRTUAL_ACCOUNT', 'CREDIT_CARD', 'BANK_TRANSFER'];
     const normalizedMethod = paymentMethod.toUpperCase();
     if (!validMethods.includes(normalizedMethod)) {
@@ -184,7 +212,7 @@ class WalletDatabase {
     const topupRecord = {
       topupId,
       referenceId,
-      userId,
+      userId: resolvedUserId,
       userName: wallet.name,
       amount: parseFloat(amount.toFixed(2)),
       currency: wallet.currency,
@@ -238,19 +266,20 @@ class WalletDatabase {
   // 7. Transaction History
   getTransactionHistory(userId, limit = 10) {
     this.data = this.loadData();
-    const wallet = this.data.wallets[userId];
+    const wallet = this.findWallet(userId);
     if (!wallet) {
       throw new Error(`Wallet for user '${userId}' not found.`);
     }
 
+    const resolvedId = wallet.userId;
     const userTransfers = this.data.transfers
-      .filter((t) => t.senderId === userId || t.recipientId === userId)
+      .filter((t) => t.senderId === resolvedId || t.recipientId === resolvedId)
       .map((t) => ({
-        type: t.senderId === userId ? 'TRANSFER_OUT' : 'TRANSFER_IN',
+        type: t.senderId === resolvedId ? 'TRANSFER_OUT' : 'TRANSFER_IN',
         id: t.transferId,
         referenceId: t.referenceId,
-        counterparty: t.senderId === userId ? t.recipientName : t.senderName,
-        counterpartyId: t.senderId === userId ? t.recipientId : t.senderId,
+        counterparty: t.senderId === resolvedId ? t.recipientName : t.senderName,
+        counterpartyId: t.senderId === resolvedId ? t.recipientId : t.senderId,
         amount: t.amount,
         currency: t.currency,
         status: t.status,
@@ -259,7 +288,7 @@ class WalletDatabase {
       }));
 
     const userTopups = this.data.topups
-      .filter((tp) => tp.userId === userId)
+      .filter((tp) => tp.userId === resolvedId)
       .map((tp) => ({
         type: 'TOPUP',
         id: tp.topupId,

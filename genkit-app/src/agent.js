@@ -183,10 +183,10 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
     };
   }
 
-  // 4. Do Transfer: ONLY when explicit action intent ("transfer $50 to Bob", "send 30 to user_102")
-  if (lower.includes('transfer') || lower.includes('send') || lower.includes('pay')) {
-    const amountMatch = q.match(/\$?\s*(\d+(\.\d{1,2})?)/);
-    const recipientMatch = q.match(/(?:to\s+)(user_\d+|bob|charlie|alice)/i);
+  // 4. Do Transfer: explicit action intent (English or Indonesian)
+  if (lower.includes('transfer') || lower.includes('send') || lower.includes('pay') || lower.includes('kirim') || lower.includes('bayar') || lower.includes('tf')) {
+    const amountMatch = q.match(/(?:\$|usd|dollar)?\s*(\d+(?:\.\d{1,2})?)\s*(?:dollar|usd|\$)?/i) || q.match(/\$?\s*(\d+(\.\d{1,2})?)/);
+    const recipientMatch = q.match(/(?:to\s+|ke\s+|buat\s+|untuk\s+)(user_\d+|bob|charlie|alice)/i);
 
     // Guard: If user didn't specify amount or recipient, ask for details instead of blindly sending money
     if (!amountMatch) {
@@ -194,12 +194,12 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
         toolCalled: 'none',
         toolArgs: {},
         toolResult: null,
-        response: `❓ How much would you like to transfer, and to whom? Please specify the amount and recipient (e.g., *"Transfer $50 to Bob"* or *"Send $30 to user_102"*).`
+        response: `❓ Berapa nominal yang ingin Anda kirimkan, dan kepada siapa? (Contoh: *"Kirim $20 ke Bob"* atau *"Transfer $50 ke Bob Jones"*).`
       };
     }
 
     const amount = parseFloat(amountMatch[1]);
-    let recipientId = 'user_102'; // default Bob if specified
+    let recipientId = 'user_102'; // default Bob
     if (recipientMatch) {
       const nameOrId = recipientMatch[1].toLowerCase();
       if (nameOrId === 'bob' || nameOrId === 'user_102') recipientId = 'user_102';
@@ -208,27 +208,27 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
       else recipientId = nameOrId;
     }
 
-    const senderMatch = q.match(/(?:from\s+)(user_\d+)/i);
+    const senderMatch = q.match(/(?:from\s+|dari\s+)(user_\d+)/i);
     const senderId = senderMatch ? senderMatch[1] : defaultUserId;
 
     const result = await executeTransferTool({
       senderId,
       recipientId,
       amount,
-      description: `Transfer initiated via Genkit Assistant: "${q}"`
+      description: `Transfer via Devfest Assistant: "${q}"`
     });
 
     let text = '';
     if (result.success) {
-      text = `🎉 **Transfer Successful!**\n` +
-             `- **Transaction ID**: ${result.transferId}\n` +
-             `- **Amount Sent**: ${result.formattedAmount}\n` +
-             `- **From**: ${result.senderName}\n` +
-             `- **To**: ${result.recipientName}\n` +
-             `- **Your Remaining Balance**: **${result.formattedRemainingBalance}**\n` +
-             `- **Timestamp**: ${new Date(result.timestamp).toLocaleString()}`;
+      text = `🎉 **Transfer Berhasil!**\n` +
+             `- **ID Transaksi**: ${result.transferId}\n` +
+             `- **Nominal Terkirim**: ${result.formattedAmount}\n` +
+             `- **Pengirim**: ${result.senderName}\n` +
+             `- **Penerima**: ${result.recipientName}\n` +
+             `- **Sisa Saldo Anda**: **${result.formattedRemainingBalance}**\n` +
+             `- **Waktu**: ${new Date(result.timestamp).toLocaleString()}`;
     } else {
-      text = `❌ **Transfer Failed**: ${result.error}`;
+      text = `❌ **Transfer Gagal**: ${result.error}`;
     }
 
     return {
@@ -314,6 +314,12 @@ function getPleasantryResponse(query) {
     return 'Siap! Jika Anda butuh bantuan transaksi lain atau ingin mengecek saldo dompet digital Anda, silakan tanyakan kapan saja.';
   }
 
+  // Casual Banter / Boredom ("saya bosan", "lagi gabut", etc.)
+  const boredomPatterns = ['bosan', 'lagi bosan', 'bosan nih', 'saya bosan', 'gabut', 'lagi gabut', 'bored', 'im bored', 'i am bored'];
+  if (boredomPatterns.some((pattern) => clean === pattern || clean.includes(pattern))) {
+    return 'Haha, lagi bosan ya? Mau coba cek saldo dompet Anda atau kirim traktiran kopi ke Bob? Biar harinya makin seru! 😄☕ Ada yang bisa saya bantu terkait Devfest Wallet?';
+  }
+
   return null;
 }
 
@@ -366,10 +372,27 @@ const walletAssistantFlow = ai.defineFlow(
         'gemini-flash-latest'
       ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
-      const systemPrompt = `You are an intelligent, helpful payment & digital wallet assistant.
+      const systemPrompt = `You are Devfest Assistant, an intelligent, friendly, and helpful payment & digital wallet AI assistant.
 The active authenticated user is "${userId || 'user_101'}".
-Use the available tools to inspect balance, check transfer status, check top-up status, execute fund transfers, initiate top-ups, or get transaction history.
-Always provide clear, secure, and professional banking responses in the user's language.
+
+REGISTERED CONTACTS & WALLET DIRECTORY:
+- Alice Smith (ID: user_101) - Active User / Account Owner
+- Bob Jones (ID: user_102) - Friend & Colleague (Active)
+- Charlie Brown (ID: user_103) - Friend (Account FROZEN by compliance)
+
+CRITICAL RULES FOR MONEY TRANSFERS:
+- Users naturally identify people by name (e.g. "Bob", "Bob Jones", "Charlie").
+- NEVER ask the user for an ID number, account number, or wallet ID! You already know the recipient IDs from the Registered Contacts list above (Bob = user_102, Charlie = user_103).
+- When the user asks to send money (e.g. "saya ingin kirim duit ni ke Bob 20 dollar yak" or "transfer $35 to Bob"):
+  IMMEDIATELY call executeTransferTool with senderId: "${userId || 'user_101'}", recipientId: "user_102", amount: 20!
+  Do NOT ask for Bob's ID!
+- If the amount is missing, ask for the amount. If the recipient is missing, ask for the recipient.
+
+CONVERSATIONAL TONE & BANTER:
+- Always respond in the SAME language the user spoke (Indonesian if user speaks Indonesian, English if English).
+- For casual chit-chat or remarks (like "saya bosan", "lagi apa", "cerita dong"):
+  Respond warmly, playfully, and empathetically with personality! (e.g. "Haha, lagi bosan ya? Mau coba kirim traktiran kopi ke Bob atau cek saldo dompet Anda sekarang? 😄").
+  Never reply with robotic errors like "Maaf saya tidak mengerti maksud Anda".
 
 PRIVACY & SECURITY RULES:
 - Never disclose internal technical user IDs (such as "user_101", "user_102") in chat responses.
