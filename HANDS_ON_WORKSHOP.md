@@ -1149,10 +1149,11 @@ Alice is restored to `$1,250.00`, Bob to `$320.50`, and Charlie to `$45.00`.
 
 | Command | Purpose | When to Use |
 | :--- | :--- | :--- |
+| `npm run web` | Starts Devfest Wallet Mobile Web App + Backend API on `http://localhost:3001` | Interactive visual mobile demonstration of the chatbot, cards, and live ledger |
 | `npm run e2e` | Runs the automated 7-scenario test suite | Fast regression test of all payment use cases |
-| `npm run chat` | Interactive AI terminal assistant | Conversational testing and prompt evaluation |
+| `npm run chat` | Interactive AI terminal assistant | Conversational testing and prompt evaluation in terminal |
 | `npm run ui` | Starts backend + Genkit Web UI on `http://localhost:4000` | Visual tool execution, flow testing, and trace inspection |
-| `npm run backend` | Starts ONLY the Express REST API on `localhost:3001` | Testing backend endpoints directly via cURL/Postman |
+| `npm run backend` | Starts the Express REST API & Mobile Web App on `localhost:3001` | Hosting backend and web client |
 | `npm run mcp:std` | Starts the standard MCP Server on `stdio` | Connecting to Claude Desktop, Cursor, or Antigravity |
 | `npm run reset-db` | Restores `wallet-db.json` back to seed values | Wiping test transactions for a fresh baseline |
 
