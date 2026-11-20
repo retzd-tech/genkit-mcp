@@ -45,25 +45,124 @@
 
 body {
   font-family: var(--font-stack);
-  background-color: var(--bg-page);
+  background: radial-gradient(circle at 50% 15%, #f4f6fa 0%, #dbe2ec 100%);
   color: var(--text-main);
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
+  align-items: center;
   justify-content: center;
+  padding: 24px 16px;
+  overflow-x: hidden;
 }
 
-/* App Container - Centered, Mobile-First Layout */
-.app-layout {
+/* ==========================================================================
+   Mobile Phone Device Frame (Wider modern smartphone container)
+   ========================================================================== */
+
+.phone-frame {
   width: 100%;
-  max-width: 540px;
-  min-height: 100vh;
+  max-width: 480px; /* "like a mobile phone ? but a little bit wider" */
+  height: 900px;
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
   background: var(--bg-card);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 35px rgba(0, 0, 0, 0.05);
-  border-left: 1px solid var(--border-light);
-  border-right: 1px solid var(--border-light);
   position: relative;
+  border-radius: 46px;
+  overflow: hidden;
+
+  /* Matte Titanium Outer Hardware Bezel + Real Device Depth */
+  box-shadow: 
+    0 0 0 11px #1d2127,
+    0 0 0 13px #31363f,
+    0 25px 60px -12px rgba(18, 24, 38, 0.35),
+    0 12px 24px -8px rgba(18, 24, 38, 0.2);
+}
+
+/* Phone Status Bar (Desktop Demo Mode) */
+.phone-status-bar {
+  height: 38px;
+  padding: 0 24px;
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: 30;
+  user-select: none;
+}
+
+.status-time {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.2px;
+  width: 50px;
+}
+
+.dynamic-island {
+  width: 100px;
+  height: 22px;
+  background: #000000;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+}
+
+.camera-lens {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #2a3449 0%, #0d1117 80%);
+  border: 1px solid #161b22;
+}
+
+.status-icons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1a1a1a;
+  width: 50px;
+  justify-content: flex-end;
+}
+
+.status-icon {
+  display: inline-block;
+  opacity: 0.85;
+}
+
+/* App Layout - Inner Screen Container */
+.app-layout {
+  width: 100%;
+  flex: 1;
+  min-height: 0; /* Crucial for inner scrolling */
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Phone Bottom Home Indicator (Desktop Demo Mode) */
+.phone-home-bar {
+  height: 22px;
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.home-indicator {
+  width: 130px;
+  height: 4.5px;
+  background: #1f2328;
+  opacity: 0.25;
+  border-radius: 10px;
 }
 
 /* ==========================================================================
@@ -532,4 +631,29 @@ body {
 @keyframes toastFadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   Responsive Adaptations (Native Mobile View)
+   ========================================================================== */
+
+@media (max-width: 520px) {
+  body {
+    padding: 0;
+    background: var(--bg-card);
+  }
+
+  .phone-frame {
+    max-width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .phone-status-bar,
+  .phone-home-bar {
+    display: none;
+  }
 }

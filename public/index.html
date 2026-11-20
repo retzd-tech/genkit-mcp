@@ -10,9 +10,36 @@
 </head>
 <body>
 
-  <div class="app-layout">
-    
-    <!-- Top Header -->
+  <!-- Floating Mobile Phone Device View -->
+  <div class="phone-frame">
+
+    <!-- Phone Status Bar & Dynamic Island (Desktop Demo Mode) -->
+    <div class="phone-status-bar" aria-hidden="true">
+      <span class="status-time">9:41</span>
+      <div class="dynamic-island">
+        <span class="camera-lens"></span>
+      </div>
+      <div class="status-icons">
+        <svg class="status-icon" width="14" height="10" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0" y="8" width="2.5" height="4" rx="0.5"/>
+          <rect x="4.5" y="5.5" width="2.5" height="6.5" rx="0.5"/>
+          <rect x="9" y="3" width="2.5" height="9" rx="0.5"/>
+          <rect x="13.5" y="0" width="2.5" height="12" rx="0.5"/>
+        </svg>
+        <svg class="status-icon" width="13" height="10" viewBox="0 0 16 12" fill="currentColor">
+          <path d="M8 10a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm-4.24-2.83a6 6 0 0 1 8.48 0 .8.8 0 0 0 1.13-1.13 7.6 7.6 0 0 0-10.74 0 .8.8 0 0 0 1.13 1.13zm-2.83-2.83a10 10 0 0 1 14.14 0 .8.8 0 0 0 1.13-1.13 11.6 11.6 0 0 0-16.4 0 .8.8 0 0 0 1.13 1.13z"/>
+        </svg>
+        <svg class="status-icon status-battery" width="20" height="10" viewBox="0 0 25 12" fill="currentColor">
+          <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="2" y="2" width="16" height="8" rx="1.5"/>
+          <path d="M23 4.5v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="app-layout">
+      
+      <!-- Top Header -->
     <header class="top-nav">
       <div class="brand">
         <span class="logo-dots" aria-hidden="true">
@@ -104,6 +131,13 @@
         </button>
       </form>
     </footer>
+
+    </div>
+
+    <!-- Phone Bottom Home Gesture Bar (Desktop Demo Mode) -->
+    <div class="phone-home-bar" aria-hidden="true">
+      <div class="home-indicator"></div>
+    </div>
 
   </div>
 
