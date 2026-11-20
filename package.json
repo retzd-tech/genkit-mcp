@@ -9,6 +9,7 @@
     "demo": "node e2e.js",
     "ui": "genkit start -- node --watch genkit-app/src/dev.js",
     "chat": "node genkit-app/src/cli.js",
+    "web": "node backend/src/server.js",
     "backend": "node backend/src/server.js",
     "mcp:genkit": "node mcp-server/src/genkit-mcp-server.js",
     "mcp:std": "node mcp-server/src/std-mcp-server.js",

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#4285F4">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Devfest Wallet - AI Banking Assistant</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='30' cy='35' r='18' fill='%234285F4'/><circle cx='70' cy='35' r='18' fill='%23EA4335'/><circle cx='30' cy='75' r='18' fill='%23FBBC05'/><circle cx='70' cy='75' r='18' fill='%2334A853'/></svg>">
+</head>
+<body class="phone-mode">
+
+  <!-- Desktop Controls Bar (Floating toggle for presentation & demos) -->
+  <aside class="desktop-toolbar" aria-label="Presentation Controls">
+    <div class="toolbar-brand">
+      <span class="logo-dots">
+        <span class="dot dot-blue"></span>
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+      </span>
+      <strong>Devfest Wallet</strong>
+      <span class="badge badge-subtle">Demo Mode</span>
+    </div>
+    <div class="toolbar-actions">
+      <button id="toggleViewBtn" class="btn-tool" title="Toggle between mobile phone frame and full screen view">
+        <span id="viewIcon">📱</span> <span id="viewLabel">Full Screen View</span>
+      </button>
+      <button id="resetDbGlobalBtn" class="btn-tool btn-tool-danger" title="Restore database to pristine seed state">
+        🔄 Reset DB Seed
+      </button>
+    </div>
+  </aside>
+
+  <!-- Mobile Device Shell / Simulator -->
+  <div class="device-wrapper" id="deviceWrapper">
+    <div class="phone-frame" id="phoneFrame">
+      
+      <!-- Phone Speaker / Camera Notch -->
+      <div class="phone-notch" aria-hidden="true">
+        <div class="notch-island">
+          <span class="notch-cam"></span>
+          <span class="notch-speaker"></span>
+        </div>
+      </div>
+
+      <!-- App Header & User Switcher -->
+      <header class="app-header">
+        <div class="header-top">
+          <div class="brand-title">
+            <span class="logo-dots" aria-hidden="true">
+              <span class="dot dot-blue"></span>
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </span>
+            <h1>Devfest Wallet</h1>
+          </div>
+          <div class="status-indicator" title="Connected to Backend API port 3001">
+            <span class="pulse-dot"></span>
+            <span class="status-text">Live API</span>
+          </div>
+        </div>
+
+        <!-- User Profile Switcher -->
+        <div class="user-selector-bar">
+          <label for="userSelect" class="sr-only">Select Active Wallet Account</label>
+          <div class="user-select-wrapper">
+            <span class="user-avatar" id="headerAvatar">👩</span>
+            <select id="userSelect" class="user-select" aria-label="Active Account">
+              <option value="user_101" selected>Alice Smith (Premium • user_101)</option>
+              <option value="user_102">Bob Jones (Standard • user_102)</option>
+              <option value="user_103">Charlie Brown (Frozen • user_103)</option>
+            </select>
+          </div>
+          <button id="refreshWalletBtn" class="btn-icon" title="Refresh Wallet Balance" aria-label="Refresh Balance">
+            🔄
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Application Container -->
+      <main class="app-content">
+
+        <!-- Persistent Digital Wallet Card -->
+        <section class="wallet-card-section" aria-label="Digital Wallet Card">
+          <div class="digital-card" id="digitalCard">
+            <div class="card-decor-circle-1" aria-hidden="true"></div>
+            <div class="card-decor-circle-2" aria-hidden="true"></div>
+            
+            <div class="card-top-row">
+              <div class="card-chip-brand">
+                <span class="card-chip" aria-hidden="true"></span>
+                <span class="card-brand-label">Devfest Pay</span>
+              </div>
+              <div class="card-badges">
+                <span class="badge badge-status" id="cardStatusBadge">ACTIVE</span>
+                <span class="badge badge-tier" id="cardTierBadge">PREMIUM</span>
+              </div>
+            </div>
+
+            <div class="card-balance-block">
+              <span class="balance-label">Total Available Balance</span>
+              <div class="balance-amount-row">
+                <h2 class="balance-amount" id="cardBalanceAmount">$1,250.00</h2>
+                <span class="balance-currency" id="cardBalanceCurrency">USD</span>
+              </div>
+            </div>
+
+            <div class="card-bottom-row">
+              <div class="card-holder-info">
+                <span class="holder-title">Cardholder</span>
+                <span class="holder-name" id="cardHolderName">Alice Smith</span>
+              </div>
+              <div class="card-logo-graphic">
+                <span class="google-colors-bar" aria-hidden="true">
+                  <i class="bar-b"></i><i class="bar-r"></i><i class="bar-y"></i><i class="bar-g"></i>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons on Card -->
+          <nav class="quick-card-actions" aria-label="Quick Actions">
+            <button class="card-action-btn" data-action="transfer" title="Send Money">
+              <span class="action-icon action-icon-blue">💸</span>
+              <span class="action-name">Send</span>
+            </button>
+            <button class="card-action-btn" data-action="topup" title="Top Up Balance">
+              <span class="action-icon action-icon-green">➕</span>
+              <span class="action-name">Top Up</span>
+            </button>
+            <button class="card-action-btn" data-action="history" title="View Transactions">
+              <span class="action-icon action-icon-yellow">📜</span>
+              <span class="action-name">History</span>
+            </button>
+            <button class="card-action-btn" data-action="status" title="Check Transfer Status">
+              <span class="action-icon action-icon-red">🔍</span>
+              <span class="action-name">Status</span>
+            </button>
+          </nav>
+        </section>
+
+        <!-- VIEW 1: Chat Assistant (Default View) -->
+        <section class="view-panel active" id="viewChat" aria-label="AI Assistant Chat">
+          <div class="chat-engine-meta">
+            <div class="meta-left">
+              <span class="sparkle-icon">✨</span>
+              <strong>Genkit MCP Assistant</strong>
+            </div>
+            <span class="engine-badge" id="engineBadge">
+              <span class="badge-dot"></span> Offline Reasoning Engine
+            </span>
+          </div>
+
+          <!-- Quick Suggested Prompts (Horizontal Scrollable Ribbon) -->
+          <div class="prompt-chips-wrapper" aria-label="Quick Prompt Suggestions">
+            <div class="prompt-chips-scroll" id="promptChips">
+              <button class="chip" data-query="What is my current balance?">💰 Check Balance</button>
+              <button class="chip chip-blue" data-query="Transfer $35 to Bob for lunch">💸 Send $35 to Bob</button>
+              <button class="chip chip-green" data-query="I want to top up $50 using virtual account">💳 Top Up $50 (VA)</button>
+              <button class="chip chip-yellow" data-query="Check status of transfer TRF-1001">🔍 Status TRF-1001</button>
+              <button class="chip" data-query="Show my recent transaction history">📜 Recent History</button>
+              <button class="chip chip-red" data-query="Why did transfer TRF-1003 fail?">❌ Failed TRF-1003</button>
+              <button class="chip chip-yellow" data-query="Transfer to Bob">⚠️ Missing Amount Guard</button>
+            </div>
+          </div>
+
+          <!-- Chat Stream Messages -->
+          <div class="chat-messages" id="chatMessages" role="log" aria-live="polite">
+            <!-- Initial Assistant Greeting -->
+            <div class="message-bubble message-assistant">
+              <div class="message-avatar">🤖</div>
+              <div class="message-body">
+                <div class="message-header">
+                  <span class="author-name">Devfest Assistant</span>
+                  <span class="message-time">Just now</span>
+                </div>
+                <div class="message-text">
+                  <p>Hello! I am your <strong>Devfest Wallet Assistant</strong> powered by <strong>Firebase Genkit</strong> and the <strong>Model Context Protocol (MCP)</strong>.</p>
+                  <p>I can help you check balances, transfer funds safely, initiate top-ups, or inquire about past transactions.</p>
+                  <p class="hint-text">💡 Tap any quick prompt chip above or type your question below!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input Bar -->
+          <form class="chat-input-bar" id="chatForm">
+            <input 
+              type="text" 
+              id="chatInput" 
+              class="chat-input" 
+              placeholder="Ask about balance, transfers, top-ups..." 
+              autocomplete="off"
+              required
+              aria-label="Message to Devfest Wallet Assistant"
+            >
+            <button type="submit" id="sendBtn" class="chat-send-btn" aria-label="Send Message" title="Send Message">
+              <svg viewBox="0 0 24 24" class="send-icon" aria-hidden="true">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="currentColor"/>
+              </svg>
+            </button>
+          </form>
+        </section>
+
+        <!-- VIEW 2: Wallet Details & Limits -->
+        <section class="view-panel" id="viewWallet" aria-label="Wallet Details" hidden>
+          <div class="panel-card">
+            <h3>Account Profile</h3>
+            <div class="detail-grid" id="profileGrid">
+              <div class="detail-item">
+                <span class="detail-label">Account Name</span>
+                <strong class="detail-value" id="detailName">Alice Smith</strong>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">User ID (Internal)</span>
+                <span class="detail-value code-pill" id="detailUserId">user_101</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Email</span>
+                <span class="detail-value" id="detailEmail">alice.smith@example.com</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Status</span>
+                <span class="badge badge-status" id="detailStatus">ACTIVE</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Tier</span>
+                <span class="badge badge-tier" id="detailTier">PREMIUM</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Daily Transfer Limit</span>
+                <strong class="detail-value" id="detailLimit">$5,000.00</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <h3>Supported Payment Channels</h3>
+            <ul class="channel-list">
+              <li>
+                <span class="channel-icon">🏦</span>
+                <div>
+                  <strong>Virtual Account</strong>
+                  <p>Instant settlement via Chase Bank partner network (24hr expiry).</p>
+                </div>
+              </li>
+              <li>
+                <span class="channel-icon">💳</span>
+                <div>
+                  <strong>Credit / Debit Card</strong>
+                  <p>Visa, MasterCard, 3D Secure verified.</p>
+                </div>
+              </li>
+              <li>
+                <span class="channel-icon">🏛️</span>
+                <div>
+                  <strong>Direct Bank Transfer</strong>
+                  <p>City Central Bank digital wallet escrow.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- VIEW 3: Live Transaction Activity -->
+        <section class="view-panel" id="viewActivity" aria-label="Transaction Activity" hidden>
+          <div class="activity-header">
+            <h3>Recent Transactions</h3>
+            <button id="refreshTxBtn" class="btn-subtle" title="Refresh Transactions">🔄 Refresh</button>
+          </div>
+          <div class="transaction-list" id="transactionList">
+            <div class="empty-state">Loading transactions from backend...</div>
+          </div>
+        </section>
+
+        <!-- VIEW 4: MCP Architecture -->
+        <section class="view-panel" id="viewMcp" aria-label="MCP Architecture Info" hidden>
+          <div class="panel-card">
+            <h3>How This Demonstration Works</h3>
+            <p>This web application demonstrates the <strong>Two-Layer AI API Pattern</strong>:</p>
+            
+            <div class="architecture-diagram">
+              <div class="arch-box arch-client">
+                <span class="arch-icon">📱</span>
+                <strong>Devfest Web Client</strong>
+                <small>Browser / Mobile UI</small>
+              </div>
+              <div class="arch-arrow">↓ <code>POST /api/chat</code></div>
+              <div class="arch-box arch-genkit">
+                <span class="arch-icon">🤖</span>
+                <strong>Firebase Genkit Flow</strong>
+                <small>Natural Language & Dual-Engine</small>
+              </div>
+              <div class="arch-arrow">↓ <code>MCP Tool Protocol</code></div>
+              <div class="arch-box arch-mcp">
+                <span class="arch-icon">🛠️</span>
+                <strong>Model Context Protocol (MCP)</strong>
+                <small>Zod Schemas & Handlers</small>
+              </div>
+              <div class="arch-arrow">↓ <code>HTTP / REST</code></div>
+              <div class="arch-box arch-backend">
+                <span class="arch-icon">🏦</span>
+                <strong>Core Banking REST API</strong>
+                <small>Port 3001 Express Ledger</small>
+              </div>
+            </div>
+
+            <div class="tools-summary">
+              <h4>Registered MCP Tools (6):</h4>
+              <ul>
+                <li><code>get_wallet_balance</code> - Inquires balances & profiles</li>
+                <li><code>check_transfer_status</code> - Queries transfer ID / REF</li>
+                <li><code>check_topup_status</code> - Queries top-up status & VAs</li>
+                <li><code>execute_transfer</code> - Debits sender & credits recipient</li>
+                <li><code>initiate_topup</code> - Issues virtual accounts / links</li>
+                <li><code>get_transaction_history</code> - Returns user ledger</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- Bottom Tab Bar Navigation -->
+      <nav class="bottom-nav" aria-label="Application Tabs">
+        <button class="nav-tab active" data-target="viewChat" aria-selected="true">
+          <span class="nav-icon">💬</span>
+          <span class="nav-label">Assistant</span>
+        </button>
+        <button class="nav-tab" data-target="viewWallet" aria-selected="false">
+          <span class="nav-icon">💳</span>
+          <span class="nav-label">Wallet</span>
+        </button>
+        <button class="nav-tab" data-target="viewActivity" aria-selected="false">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Activity</span>
+        </button>
+        <button class="nav-tab" data-target="viewMcp" aria-selected="false">
+          <span class="nav-icon">ℹ️</span>
+          <span class="nav-label">MCP Info</span>
+        </button>
+      </nav>
+
+    </div>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -112,13 +112,29 @@ This is where **Firebase Genkit** lives:
 
 Each layer can be run independently to test or integrate into different architectures:
 
-### 1. Run the Backend API Only (Independent Microservice)
-To run just the Node.js Express banking server:
+### 1. Run the Devfest Wallet Mobile Web App & Backend API
+A responsive mobile web application to demonstrate the AI chatbot with the Google/Devfest theme (White, Blue, Red, Yellow, Green):
 ```bash
+npm run web
+# or
 npm run backend
 ```
+* **URL**: Open **`http://localhost:3001`** in any web browser (or mobile browser).
+* **Key Features**:
+  * **Phone Simulator / Full Width**: Switch between mobile phone frame and full-width layout.
+  * **Interactive AI Assistant**: Chat with the assistant to check balances, transfer money, inquire about top-ups, and test safety prompts.
+  * **MCP Tool Transparency**: Collapsible badges under assistant messages show the exact MCP tool called, input arguments, and backend REST response.
+  * **Live Wallet Card**: Real-time balance updates as money is sent or topped up.
+  * **Account Switcher**: Toggle between Alice (`user_101`), Bob (`user_102`), and Charlie (`user_103`).
+  * **Live Ledger & Architecture**: Dedicated tabs showing recent transactions and the Two-Layer API architectural diagram.
+  * **1-Click Reset**: Restore initial seed state anytime.
+
+---
+
+### 2. Run the Backend API via cURL / Postman
+You can also interact directly with the Express REST API microservice:
 * **Endpoint**: `http://localhost:3001`
-* **Test it via cURL / Postman**:
+* **Test it via cURL**:
   ```bash
   # Check Alice's balance
   curl http://localhost:3001/api/wallets/user_101
