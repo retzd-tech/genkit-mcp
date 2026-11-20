@@ -154,6 +154,15 @@ function getPleasantryResponse(query) {
   return null;
 }
 
+function withTimeout(promise, ms = 8500) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Model request timed out after ${ms}ms`)), ms)
+    )
+  ]);
+}
+
 // Define Genkit Flow for Wallet Assistant
 const walletAssistantFlow = ai.defineFlow(
   {
@@ -181,23 +190,20 @@ const walletAssistantFlow = ai.defineFlow(
       };
     }
 
-    // 2. If Gemini API Key is available, use LLM generation with tools
+    // 2. If Gemini API Key is available, use LLM generation with automatic model fallback
     if (hasApiKey) {
-      try {
-        const { googleAI } = require('@genkit-ai/google-genai');
-        const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
-        const llmResponse = await ai.generate({
-          model: googleAI.model(modelName, {
-            thinkingConfig: {
-              thinkingLevel: 'LOW'
-            }
-          }),
-          config: {
-            thinkingConfig: {
-              thinkingLevel: 'LOW'
-            }
-          },
-          prompt: `You are an intelligent, helpful payment & digital wallet assistant.
+      const { googleAI } = require('@genkit-ai/google-genai');
+      const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+      
+      // Fallback chain in case of Google 503 capacity spikes
+      const candidateModels = [
+        primaryModel,
+        'gemini-2.5-flash',
+        'gemini-2.5-flash-lite',
+        'gemini-flash-latest'
+      ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+
+      const systemPrompt = `You are an intelligent, helpful payment & digital wallet assistant.
 The active authenticated user is "${userId || 'user_101'}".
 Use the available tools to inspect balance, check transfer status, check top-up status, execute fund transfers, initiate top-ups, or get transaction history.
 Always provide clear, secure, and professional banking responses in the user's language.
@@ -208,19 +214,36 @@ PRIVACY & SECURITY RULES:
 - Refer to counterparties by their names (e.g. Bob Jones).
 - Public transaction references (e.g. "TRF-1001", "TOP-5001", virtual account numbers) are safe to show.
 
-User Query: ${query}`,
-          tools: walletTools
-        });
+User Query: ${query}`;
 
-        return {
-          query,
-          response: llmResponse.text,
-          toolCalls: llmResponse.messages || [],
-          data: { mode: 'gemini-llm' }
-        };
-      } catch (err) {
-        console.warn('[Genkit Agent] LLM generation error, falling back to simulated reasoning engine:', err.message);
+      for (const modelCandidate of candidateModels) {
+        try {
+          const config = modelCandidate.includes('2.5')
+            ? { thinkingConfig: { thinkingBudget: 0 } }
+            : { thinkingConfig: { thinkingLevel: 'LOW' } };
+
+          const llmResponse = await withTimeout(
+            ai.generate({
+              model: googleAI.model(modelCandidate, config),
+              config,
+              prompt: systemPrompt,
+              tools: walletTools
+            }),
+            8500 // Prevents SDK from hanging for 38+ seconds on 503 retries
+          );
+
+          return {
+            query,
+            response: llmResponse.text,
+            toolCalls: llmResponse.messages || [],
+            data: { mode: 'gemini-llm', model: modelCandidate }
+          };
+        } catch (err) {
+          console.warn(`[Genkit Agent] Model ${modelCandidate} failed: ${err.message}. Trying next fallback...`);
+        }
       }
+
+      console.warn('[Genkit Agent] All cloud LLM candidates unavailable or timed out, falling back to simulated reasoning engine.');
     }
 
     // 3. Simulated reasoning engine fallback
