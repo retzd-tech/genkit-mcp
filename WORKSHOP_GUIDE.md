@@ -261,6 +261,34 @@ npm run mcp:std
 ```
 *(The server connects to `process.stdin`/`process.stdout` and waits for JSON-RPC messages. Press `Ctrl+C` to exit).*
 
+### Task 2.3: Connect & Test with Google Antigravity via `.agents/`
+Google Antigravity automatically discovers project MCP servers via the `.agents/` directory:
+
+1. **Verify `.agents/mcp_config.json`**:
+   ```json
+   {
+     "mcpServers": {
+       "devfest-wallet": {
+         "command": "node",
+         "args": ["mcp-server/src/std-mcp-server.js"],
+         "env": {
+           "BACKEND_API_URL": "http://localhost:3001"
+         }
+       }
+     }
+   }
+   ```
+2. **Ensure Core Banking API is running**:
+   ```bash
+   npm run backend
+   ```
+3. **Open Antigravity Chat in this project and test these prompts**:
+   * *"Check the current wallet balance for Alice (user_101)"* $\rightarrow$ invokes `get_wallet_balance`.
+   * *"What is the status of transfer TRF-1001?"* $\rightarrow$ invokes `check_transfer_status`.
+   * *"Transfer $20 from user_101 to Bob Jones with note 'Coffee treat'"* $\rightarrow$ invokes `execute_transfer`.
+   * *"Why did transfer TRF-1003 fail?"* $\rightarrow$ invokes `check_transfer_status` and explains account freeze.
+   * *"Show me recent transactions for user_101"* $\rightarrow$ invokes `get_transaction_history`.
+
 ---
 
 ## Part 4: Exercise 3 — Registering Genkit Tools & Using the Web UI (25 mins)
