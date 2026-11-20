@@ -186,11 +186,38 @@ const walletAssistantFlow = ai.defineFlow(
     })
   },
   async ({ query, userId, history = [] }) => {
-    // 1. Instant Fast Path: Standalone pleasantries & greetings ONLY when there is no active conversational history!
-    // (If user says "okay baik" in response to a pending transfer, let the model process it with full context!)
-    if (!history || history.length === 0) {
-      const pleasantry = getPleasantryResponse(query);
-      if (pleasantry) {
+    // 1. Instant Fast Path:
+    // Gratitude (e.g. "terima kasih", "thank you", "mantap terima kasih") and boredom ("saya bosan")
+    // are ALWAYS returned in < 5ms, avoiding unnecessary LLM round-trips.
+    const isGratitude = /^(mantap\s+)?(terima\s*kasih|makasih|makasi|mksh|thank\s*you|thanks|thx|maturnuwun|hatur\s*nuhun|arigato)\b/i.test(query.trim());
+    const isBored = /\b(bosan|gabut|bored)\b/i.test(query.trim());
+
+    if (isGratitude) {
+      return {
+        query,
+        response: 'Sama-sama! Senang bisa membantu Anda. Jika ada transaksi atau bantuan lain seputar dompet digital Anda, silakan beri tahu ya! 😊',
+        toolCalls: [],
+        data: { mode: 'instant-conversational' }
+      };
+    }
+
+    if (isBored) {
+      return {
+        query,
+        response: 'Haha, lagi bosan ya? Mau coba cek saldo dompet Anda atau kirim traktiran kopi ke Bob? Biar harinya makin seru! 😄☕ Ada yang bisa saya bantu terkait Devfest Wallet?',
+        toolCalls: [],
+        data: { mode: 'instant-conversational' }
+      };
+    }
+
+    // Check greetings or closing acknowledgments
+    const pleasantry = getPleasantryResponse(query);
+    if (pleasantry) {
+      const lastModelMsg = [...(history || [])].reverse().find(m => m && (m.role === 'model' || m.role === 'assistant'));
+      const lastText = lastModelMsg ? (typeof lastModelMsg.content === 'string' ? lastModelMsg.content : (lastModelMsg.content?.[0]?.text || '')) : '';
+      const isAwaitingAnswer = lastText.includes('?') || /\b(apakah|berapa|siapa|konfirmasi|confirm)\b/i.test(lastText);
+
+      if (!isAwaitingAnswer) {
         return {
           query,
           response: pleasantry,
@@ -200,85 +227,99 @@ const walletAssistantFlow = ai.defineFlow(
       }
     }
 
-    // 2. If Gemini API Key is available, use LLM generation with modern Interactions API models
+    // 2. If Gemini API Key is available, use LLM generation (single attempt, no retry)
     if (hasApiKey) {
       const { googleAI } = require('@genkit-ai/google-genai');
       const rawModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
-      // Automatically sanitize legacy 2.5 models to the active gemini-3.5-flash-lite model
-      const primaryModel = rawModel.includes('2.5') ? 'gemini-3.5-flash-lite' : rawModel;
-
-      // Modern Interactions API models only (Google returns 404 for deprecated 2.5 models)
-      const candidateModels = [
-        primaryModel,
-        'gemini-flash-latest',
-        'gemini-3.8-flash',
-        'gemini-flash-lite-latest'
-      ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+      const targetModel = rawModel.replace(/2\.5/g, '3.5');
 
       const systemPrompt = `You are Devfest Assistant, an intelligent, friendly, and helpful payment & digital wallet AI assistant.
-The active authenticated user is "${userId || 'user_101'}".
+The active authenticated user is "${userId || 'user_101'}" (Alice Smith).
 
 REGISTERED CONTACTS DIRECTORY:
-- Alice Smith (You / Active User)
-- Bob Jones (Friend & Colleague - Active)
-- Charlie Brown (Contact - Account FROZEN by Compliance)
+- Alice Smith (ID: user_101) -> The active authenticated user / sender
+- Bob Jones (ID: user_102, also referred to as "Bob") -> Friend & Colleague (Active)
+- Charlie Brown (ID: user_103, also referred to as "Charlie") -> Contact (Account FROZEN by Compliance)
 
-TRANSFER & RECIPIENT RULES:
-1. ONLY transfer to contacts that exist in the directory above (Bob Jones or Charlie Brown).
-2. If the user mentions a name NOT in the directory (e.g. "Bob Uchiha", "Naruto", "John"):
-   - Explicitly tell the user: "Kontak '[Name]' tidak ditemukan di daftar kontak Anda."
-   - Suggest the real matching contact without leaking technical IDs (e.g., "Apakah Anda bermaksud mengirim uang ke Bob Jones?").
-   - NEVER invent or pretend to transfer to a contact that does not exist.
-3. When the user confirms a pending transfer in conversation (e.g. "okay baik", "ya kirimkan", "oke", "yes", "lanjutkan"):
-   - Review the conversation history, identify the agreed recipient and amount, and IMMEDIATELY call executeTransferTool!
-4. When transferring to Bob or Bob Jones, pass recipientId: "user_102" (or "Bob Jones").
-5. When completing a transaction or checking balance, ALWAYS report the exact remaining balance returned by the tool (never guess or invent a balance number).
+STRICT PRIVACY & CONTACT RESOLUTION RULES:
+1. NEVER ASK THE USER FOR AN ACCOUNT ID, WALLET ID, OR USER ID!
+   - Users do NOT know technical IDs and NEVER need to provide them.
+   - Any query mentioning "Bob" or "Bob Jones" maps directly to Bob Jones (recipientId: "user_102").
+   - Any query mentioning "Charlie" or "Charlie Brown" maps directly to Charlie Brown (recipientId: "user_103").
+   - Asking questions like "Berapa nomor ID akun Bob?", "Apakah Anda mengetahui ID wallet Bob Jones?", or "Bisa berikan ID wallet?" is STRICTLY FORBIDDEN!
+2. NEVER disclose technical user IDs (such as "user_101", "user_102", "user_103", or "userId") in any of your chat responses under ANY circumstances!
+   - Always refer to counterparties by their real names ("Bob Jones", "Charlie Brown", "Alice Smith").
+   - Public transaction references (e.g. "TRF-1001", "TOP-5001") are safe to show.
 
-ABSOLUTE PRIVACY & SECURITY RESTRICTIONS:
-- NEVER disclose technical user IDs (such as "user_101", "user_102", "user_103", "userId", or account ID strings) in any of your chat responses under ANY circumstances!
-- Refer to counterparties ONLY by their names (e.g. "Bob Jones", "Charlie Brown", "Alice Smith").
-- Public transaction references (e.g. "TRF-1001", "TOP-5001", virtual account numbers) are safe to show.
+TRANSFER EXECUTION & FUNCTION CALLING:
+1. IMMEDIATE TRANSFER EXECUTION:
+   - When the user asks to transfer, send, pay, or kirim money to a registered contact with an amount (e.g. "saya ingin kirim duit ni ke Bob 20 dollar yak", "kirim uang 20 dollar ke Bob ya", "transfer $20 ke Bob Jones", "bayar 15 dollar ke Bob"):
+     You ALREADY have the recipient and amount!
+     DO NOT ask questions!
+     DO NOT ask for confirmation!
+     DO NOT ask for an ID!
+     IMMEDIATELY call the "execute_transfer" tool with:
+       - senderId: "${userId || 'user_101'}"
+       - recipientId: "user_102" (or "Bob Jones")
+       - amount: <number>
+       - description: "Transfer to <Recipient>"
+2. MULTI-TURN MEMORY & CONVERSATIONAL CONTEXT:
+   - If the user provides the recipient in one message and the amount in another (or vice versa), RETAIN and COMBINE them from previous messages in the conversation!
+   - When the user confirms a pending transfer (e.g. "okay baik", "ya kirimkan", "oke", "yes", "lanjutkan", "kirim sekarang"):
+     Retrieve the agreed recipient and amount from the conversation history, and IMMEDIATELY call "execute_transfer"!
+3. UNKNOWN CONTACTS:
+   - If the user mentions a contact name NOT in the Registered Contacts Directory (e.g. "Bob Uchiha", "Naruto", "John"):
+     - Inform the user: "Kontak '[Name]' tidak ditemukan di daftar kontak Anda."
+     - If the name is similar to a known contact, politely suggest: "Apakah Anda bermaksud mengirim uang ke Bob Jones?"
+     - NEVER call execute_transfer for unknown contacts.
+4. ACCURATE BALANCE REPORTING:
+   - When completing a transaction or checking balance, ALWAYS report the exact remaining balance returned by the tool ("remainingBalance" or "formattedRemainingBalance"). NEVER guess, invent, or extrapolate balance numbers.
 
 CONVERSATIONAL TONE & LANGUAGE:
 - Always respond in the SAME language the user used (Indonesian if Indonesian, English if English).
 - For casual chit-chat (like "saya bosan", "lagi apa"): be warm, playful, and charming in Indonesian, and gently guide them back to their wallet.`;
 
-      // Convert incoming history into Genkit messages for multi-turn conversational context
-      const genkitMessages = (history || [])
-        .filter(m => m && m.content)
-        .map(m => ({
-          role: m.role === 'model' || m.role === 'assistant' ? 'model' : 'user',
-          content: [{ text: typeof m.content === 'string' ? m.content : String(m.content) }]
-        }));
-
-      for (const modelCandidate of candidateModels) {
-        try {
-          const config = { thinkingConfig: { thinkingLevel: 'LOW' } };
-
-          const llmResponse = await withTimeout(
-            ai.generate({
-              model: googleAI.model(modelCandidate, config),
-              config,
-              system: systemPrompt,
-              messages: genkitMessages,
-              prompt: query,
-              tools: walletTools
-            }),
-            25000 // 25s timeout allows 2-turn MCP function calls to complete smoothly
-          );
-
-          return {
-            query,
-            response: llmResponse.text,
-            toolCalls: llmResponse.messages || [],
-            data: { mode: 'gemini-llm', model: modelCandidate }
-          };
-        } catch (err) {
-          console.warn(`[Genkit Agent] Model ${modelCandidate} failed: ${err.message}. Trying next fallback...`);
+      // Sanitize incoming history to ensure clean alternating messages
+      const genkitMessages = [];
+      for (const m of history || []) {
+        if (!m || !m.content) continue;
+        const role = (m.role === 'model' || m.role === 'assistant') ? 'model' : 'user';
+        const text = typeof m.content === 'string' ? m.content : String(m.content);
+        if (!text.trim()) continue;
+        if (genkitMessages.length > 0 && genkitMessages[genkitMessages.length - 1].role === role) {
+          continue;
         }
+        genkitMessages.push({ role, content: [{ text }] });
       }
 
-      console.warn('[Genkit Agent] All cloud LLM candidates unavailable or timed out, falling back to simulated reasoning engine.');
+      // If the last message in genkitMessages is 'user', remove it so prompt: query provides the user turn
+      if (genkitMessages.length > 0 && genkitMessages[genkitMessages.length - 1].role === 'user') {
+        genkitMessages.pop();
+      }
+
+      try {
+        const config = { thinkingConfig: { thinkingLevel: 'LOW' } };
+        const llmResponse = await withTimeout(
+          ai.generate({
+            model: googleAI.model(targetModel, config),
+            config,
+            system: systemPrompt,
+            messages: genkitMessages,
+            prompt: query,
+            tools: walletTools
+          }),
+          25000 // 25s timeout allows 2-turn MCP function calls to complete smoothly
+        );
+
+        return {
+          query,
+          response: llmResponse.text,
+          toolCalls: llmResponse.messages || [],
+          data: { mode: 'gemini-llm', model: targetModel }
+        };
+      } catch (err) {
+        console.warn(`[Genkit Agent] LLM generation failed (${err.message}), falling back to local MCP engine.`);
+      }
     }
 
     // 3. Simulated reasoning engine fallback

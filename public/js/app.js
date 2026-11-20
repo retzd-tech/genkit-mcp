@@ -9,6 +9,7 @@
   // State
   let currentUserId = 'user_101';
   let isSending = false;
+  let conversationHistory = [];
 
   const USERS = {
     user_101: { name: 'Alice Smith', avatar: '👩' },
@@ -45,6 +46,7 @@
     // 1. Switch User
     userSelect.addEventListener('change', async (e) => {
       currentUserId = e.target.value;
+      conversationHistory = [];
       const user = USERS[currentUserId] || { name: 'User', avatar: '👤' };
       userAvatar.textContent = user.avatar;
       greetingName.textContent = user.name.split(' ')[0];
@@ -64,6 +66,7 @@
         const res = await fetch('/api/reset', { method: 'POST' });
         const json = await res.json();
         if (json.success) {
+          conversationHistory = [];
           showToast('Database reset to seed balances');
           appendSystemNotice('🔄 Database reset. Initial balances: Alice ($1,250.00), Bob ($320.50).');
           await refreshWallet();
@@ -125,8 +128,12 @@
     if (isSending) return;
     isSending = true;
 
+    // Capture prior history BEFORE appending the new user message
+    const priorHistory = conversationHistory.slice(-12);
+
     // Append User Bubble
     appendUserBubble(query);
+    conversationHistory.push({ role: 'user', content: query });
 
     // Append Typing Indicator
     const typingIndicator = createTypingIndicator();
@@ -139,7 +146,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query,
-          userId: currentUserId
+          userId: currentUserId,
+          history: priorHistory
         })
       });
 
@@ -148,6 +156,7 @@
 
       if (json.success && json.data) {
         const agent = json.data;
+        conversationHistory.push({ role: 'model', content: agent.response });
         appendAssistantBubble(agent.response, agent.toolCalls);
 
         // Update balance if a transfer or topup occurred
