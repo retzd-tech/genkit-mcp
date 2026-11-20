@@ -26,7 +26,9 @@ By the end of this workshop, you will have built and mastered:
 
 ---
 
-## Repository Branch Strategy
+## Repository & Branch Strategy
+
+* **GitHub Repository**: [https://github.com/retzd-tech/genkit-mcp](https://github.com/retzd-tech/genkit-mcp)
 
 This repository provides two branches:
 
@@ -39,7 +41,13 @@ This repository provides two branches:
 
 ## Part 1: Environment Setup & Verification (15 mins)
 
-### Step 1.1: Prerequisites Check
+### Step 1.1: Clone the Repository & Check Prerequisites
+If you haven't cloned the project yet, run:
+```bash
+git clone https://github.com/retzd-tech/genkit-mcp.git
+cd genkit-mcp
+```
+
 Verify that you have Node.js and npm installed:
 ```bash
 node -v   # Must be v18.0.0 or higher (v20 or v22 recommended)
