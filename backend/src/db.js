@@ -43,7 +43,7 @@ class WalletDatabase {
     }
   }
 
-  // Helper: Find wallet by ID, Name, First Name, or Email
+  // Helper: Find wallet by ID, Full Name, First Name (single word only), or Email
   findWallet(query) {
     if (!query) return null;
     this.data = this.loadData();
@@ -53,17 +53,24 @@ class WalletDatabase {
     if (this.data.wallets[query]) return this.data.wallets[query];
     if (this.data.wallets[q]) return this.data.wallets[q];
 
-    // 2. Match by full name, first name, or email
+    // 2. Exact Full Name or Exact Email
     for (const w of Object.values(this.data.wallets)) {
       const wName = w.name.toLowerCase();
-      const wFirst = wName.split(' ')[0];
       const wEmail = (w.email || '').toLowerCase();
       if (w.userId.toLowerCase() === q) return w;
       if (wName === q) return w;
-      if (wFirst === q) return w;
       if (wEmail === q) return w;
-      if (wName.includes(q) || q.includes(wFirst)) return w;
     }
+
+    // 3. Exact First Name match ONLY when the query is a single word (e.g. 'bob' matches 'Bob Jones')
+    // Prevents 'bob uchiha' from falsely matching 'bob jones'!
+    if (!q.includes(' ')) {
+      for (const w of Object.values(this.data.wallets)) {
+        const wFirst = w.name.toLowerCase().split(' ')[0];
+        if (wFirst === q) return w;
+      }
+    }
+
     return null;
   }
 
@@ -81,29 +88,22 @@ class WalletDatabase {
 
   // 2. Transfer Funds
   executeTransfer({ senderId, recipientId, amount, description = 'Wallet Transfer' }) {
-    this.data = this.loadData();
     if (!senderId || !recipientId) {
       throw new Error('Both senderId and recipientId are required.');
     }
 
-    const sender = this.findWallet(senderId);
-    if (!sender) {
+    const senderWallet = this.findWallet(senderId);
+    if (!senderWallet) {
       throw new Error(`Sender wallet '${senderId}' does not exist.`);
     }
-    if (sender.status !== 'ACTIVE') {
-      throw new Error(`Sender wallet is ${sender.status}. Cannot perform transactions.`);
+
+    const recipientWallet = this.findWallet(recipientId);
+    if (!recipientWallet) {
+      throw new Error(`Recipient wallet '${recipientId}' does not exist in registered contacts.`);
     }
 
-    const recipient = this.findWallet(recipientId);
-    if (!recipient) {
-      throw new Error(`Recipient wallet '${recipientId}' does not exist.`);
-    }
-    if (recipient.status !== 'ACTIVE') {
-      throw new Error(`Recipient wallet is ${recipient.status}. Cannot receive funds.`);
-    }
-
-    const resolvedSenderId = sender.userId;
-    const resolvedRecipientId = recipient.userId;
+    const resolvedSenderId = senderWallet.userId;
+    const resolvedRecipientId = recipientWallet.userId;
 
     if (resolvedSenderId === resolvedRecipientId) {
       throw new Error('Cannot transfer funds to the same wallet account.');
@@ -112,11 +112,23 @@ class WalletDatabase {
       throw new Error('Transfer amount must be a positive number.');
     }
 
+    // Load data fresh and get live object references from the same this.data
+    this.data = this.loadData();
+    const sender = this.data.wallets[resolvedSenderId];
+    const recipient = this.data.wallets[resolvedRecipientId];
+
+    if (!sender || sender.status !== 'ACTIVE') {
+      throw new Error(`Sender wallet is ${sender ? sender.status : 'missing'}. Cannot perform transactions.`);
+    }
+    if (!recipient || recipient.status !== 'ACTIVE') {
+      throw new Error(`Recipient wallet is ${recipient ? recipient.status : 'missing'}. Cannot receive funds.`);
+    }
+
     if (sender.balance < amount) {
       throw new Error(`Insufficient funds. Available: $${sender.balance.toFixed(2)}, Requested: $${amount.toFixed(2)}.`);
     }
 
-    // Debit sender & Credit recipient
+    // Debit sender & Credit recipient in the persisted data store
     sender.balance = parseFloat((sender.balance - amount).toFixed(2));
     recipient.balance = parseFloat((recipient.balance + amount).toFixed(2));
 

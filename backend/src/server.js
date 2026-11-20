@@ -161,13 +161,13 @@ app.post('/api/topups/:topupId/complete', (req, res) => {
 
 // Chatbot endpoint: connects Web UI to Firebase Genkit Assistant Flow
 app.post('/api/chat', async (req, res) => {
-  const { query, userId = 'user_101' } = req.body;
+  const { query, userId = 'user_101', history = [] } = req.body;
   if (!query) {
     return res.status(400).json({ success: false, error: 'Query is required' });
   }
   try {
     const { walletAssistantFlow } = require('../../genkit-app/src/agent');
-    const result = await walletAssistantFlow({ query, userId });
+    const result = await walletAssistantFlow({ query, userId, history });
     res.json({ success: true, data: result });
   } catch (err) {
     console.error('[API Chat Error]', err);

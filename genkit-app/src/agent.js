@@ -338,7 +338,8 @@ const walletAssistantFlow = ai.defineFlow(
     name: 'walletAssistantFlow',
     inputSchema: z.object({
       query: z.string().describe('The user inquiry or command regarding their wallet or payment'),
-      userId: z.string().optional().default('user_101').describe('Default user ID of the authenticated user')
+      userId: z.string().optional().default('user_101').describe('Default user ID of the authenticated user'),
+      history: z.array(z.any()).optional().default([])
     }),
     outputSchema: z.object({
       query: z.string(),
@@ -347,19 +348,22 @@ const walletAssistantFlow = ai.defineFlow(
       data: z.any()
     })
   },
-  async ({ query, userId }) => {
-    // 1. Instant Fast Path: Pleasantries, gratitude, and greetings (sub-millisecond latency)
-    const pleasantry = getPleasantryResponse(query);
-    if (pleasantry) {
-      return {
-        query,
-        response: pleasantry,
-        toolCalls: [],
-        data: { mode: 'instant-conversational' }
-      };
+  async ({ query, userId, history = [] }) => {
+    // 1. Instant Fast Path: Standalone pleasantries & greetings ONLY when there is no active conversational history!
+    // (If user says "okay baik" in response to a pending transfer, let the model process it with full context!)
+    if (!history || history.length === 0) {
+      const pleasantry = getPleasantryResponse(query);
+      if (pleasantry) {
+        return {
+          query,
+          response: pleasantry,
+          toolCalls: [],
+          data: { mode: 'instant-conversational' }
+        };
+      }
     }
 
-    // 2. If Gemini API Key is available, use LLM generation with automatic model fallback
+    // 2. If Gemini API Key is available, use LLM generation with automatic model fallback & multi-turn memory
     if (hasApiKey) {
       const { googleAI } = require('@genkit-ai/google-genai');
       const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
@@ -375,32 +379,38 @@ const walletAssistantFlow = ai.defineFlow(
       const systemPrompt = `You are Devfest Assistant, an intelligent, friendly, and helpful payment & digital wallet AI assistant.
 The active authenticated user is "${userId || 'user_101'}".
 
-REGISTERED CONTACTS & WALLET DIRECTORY:
-- Alice Smith (ID: user_101) - Active User / Account Owner
-- Bob Jones (ID: user_102) - Friend & Colleague (Active)
-- Charlie Brown (ID: user_103) - Friend (Account FROZEN by compliance)
+REGISTERED CONTACTS DIRECTORY:
+- Alice Smith (You / Active User)
+- Bob Jones (Friend & Colleague - Active)
+- Charlie Brown (Contact - Account FROZEN by Compliance)
 
-CRITICAL RULES FOR MONEY TRANSFERS:
-- Users naturally identify people by name (e.g. "Bob", "Bob Jones", "Charlie").
-- NEVER ask the user for an ID number, account number, or wallet ID! You already know the recipient IDs from the Registered Contacts list above (Bob = user_102, Charlie = user_103).
-- When the user asks to send money (e.g. "saya ingin kirim duit ni ke Bob 20 dollar yak" or "transfer $35 to Bob"):
-  IMMEDIATELY call executeTransferTool with senderId: "${userId || 'user_101'}", recipientId: "user_102", amount: 20!
-  Do NOT ask for Bob's ID!
-- If the amount is missing, ask for the amount. If the recipient is missing, ask for the recipient.
+TRANSFER & RECIPIENT RULES:
+1. ONLY transfer to contacts that exist in the directory above (Bob Jones or Charlie Brown).
+2. If the user mentions a name NOT in the directory (e.g. "Bob Uchiha", "Naruto", "John"):
+   - Explicitly tell the user: "Kontak '[Name]' tidak ditemukan di daftar kontak Anda."
+   - Suggest the real matching contact without leaking technical IDs (e.g., "Apakah Anda bermaksud mengirim uang ke Bob Jones?").
+   - NEVER invent or pretend to transfer to a contact that does not exist.
+3. When the user confirms a pending transfer in conversation (e.g. "okay baik", "ya kirimkan", "oke", "yes", "lanjutkan"):
+   - Review the conversation history, identify the agreed recipient and amount, and IMMEDIATELY call executeTransferTool!
+4. When transferring to Bob or Bob Jones, pass recipientId: "user_102" (or "Bob Jones").
+5. When completing a transaction or checking balance, ALWAYS report the exact remaining balance returned by the tool (never guess or invent a balance number).
 
-CONVERSATIONAL TONE & BANTER:
-- Always respond in the SAME language the user spoke (Indonesian if user speaks Indonesian, English if English).
-- For casual chit-chat or remarks (like "saya bosan", "lagi apa", "cerita dong"):
-  Respond warmly, playfully, and empathetically with personality! (e.g. "Haha, lagi bosan ya? Mau coba kirim traktiran kopi ke Bob atau cek saldo dompet Anda sekarang? 😄").
-  Never reply with robotic errors like "Maaf saya tidak mengerti maksud Anda".
-
-PRIVACY & SECURITY RULES:
-- Never disclose internal technical user IDs (such as "user_101", "user_102") in chat responses.
-- Address the user naturally by their name (e.g. Alice or Alice Smith) or simply say "your account" / "your balance".
-- Refer to counterparties by their names (e.g. Bob Jones).
+ABSOLUTE PRIVACY & SECURITY RESTRICTIONS:
+- NEVER disclose technical user IDs (such as "user_101", "user_102", "user_103", "userId", or account ID strings) in any of your chat responses under ANY circumstances!
+- Refer to counterparties ONLY by their names (e.g. "Bob Jones", "Charlie Brown", "Alice Smith").
 - Public transaction references (e.g. "TRF-1001", "TOP-5001", virtual account numbers) are safe to show.
 
-User Query: ${query}`;
+CONVERSATIONAL TONE & LANGUAGE:
+- Always respond in the SAME language the user used (Indonesian if Indonesian, English if English).
+- For casual chit-chat (like "saya bosan", "lagi apa"): be warm, playful, and charming in Indonesian, and gently guide them back to their wallet.`;
+
+      // Convert incoming history into Genkit messages for multi-turn conversational context
+      const genkitMessages = (history || [])
+        .filter(m => m && m.content)
+        .map(m => ({
+          role: m.role === 'model' || m.role === 'assistant' ? 'model' : 'user',
+          content: [{ text: typeof m.content === 'string' ? m.content : String(m.content) }]
+        }));
 
       for (const modelCandidate of candidateModels) {
         try {
@@ -412,7 +422,9 @@ User Query: ${query}`;
             ai.generate({
               model: googleAI.model(modelCandidate, config),
               config,
-              prompt: systemPrompt,
+              system: systemPrompt,
+              messages: genkitMessages,
+              prompt: query,
               tools: walletTools
             }),
             8500 // Prevents SDK from hanging for 38+ seconds on 503 retries
