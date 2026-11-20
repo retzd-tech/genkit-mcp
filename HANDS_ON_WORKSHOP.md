@@ -77,7 +77,7 @@ cp .env.example .env
 Edit `.env` and set your key and model:
 ```env
 GEMINI_API_KEY=AIzaSy...your_gemini_api_key
-GEMINI_MODEL=gemini-3.8-flash-lite
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 *(For complete details on the dual-engine design, see [AI_ENGINES_GUIDE.md](AI_ENGINES_GUIDE.md)).*
 
@@ -752,7 +752,7 @@ const walletAssistantFlow = ai.defineFlow(
     if (hasApiKey) {
       try {
         const { googleAI } = require('@genkit-ai/google-genai');
-        const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash-lite';
+        const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
         const llmResponse = await ai.generate({
           model: googleAI.model(modelName),
           prompt: `You are an intelligent, helpful payment & digital wallet assistant.

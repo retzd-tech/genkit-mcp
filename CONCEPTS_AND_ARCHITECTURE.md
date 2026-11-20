@@ -256,7 +256,7 @@ The entry point of the AI layer is `walletAssistantFlow` in [`genkit-app/src/age
 
 1. **Engine A: Cloud Generative AI (`@genkit-ai/google-genai`)**:
    * Activated when `process.env.GEMINI_API_KEY` is present.
-   * Invokes `ai.generate()` using `gemini-3.8-flash-lite` (or the model specified by `GEMINI_MODEL`).
+   * Invokes `ai.generate()` using `gemini-3.5-flash-lite` (or the model specified by `GEMINI_MODEL`).
    * Supplies the list of registered MCP tools (`walletTools`).
    * The Gemini neural network autonomously selects tools, parses arguments, and generates dynamic conversational prose.
 

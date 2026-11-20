@@ -128,6 +128,9 @@
     if (isSending) return;
     isSending = true;
 
+    // Capture prior history BEFORE appending the new user message
+    const priorHistory = conversationHistory.slice(-12);
+
     // Append User Bubble
     appendUserBubble(query);
     conversationHistory.push({ role: 'user', content: query });
@@ -144,7 +147,7 @@
         body: JSON.stringify({
           query,
           userId: currentUserId,
-          history: conversationHistory.slice(-12)
+          history: priorHistory
         })
       });
 

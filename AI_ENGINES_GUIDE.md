@@ -47,7 +47,7 @@ flowchart TD
 | **Execution Environment** | 100% Local (Node.js runtime) | Hybrid (Local Genkit + Google Cloud AI API) |
 | **External Network Required** | None (Fully air-gapped) | Outbound HTTPS to `generativelanguage.googleapis.com` |
 | **API Key Required** | None ($0 cost, zero signup) | `GEMINI_API_KEY` (Free tier or Google Cloud billing) |
-| **Reasoning Model** | Deterministic Pattern & Entity Matcher | Deep Neural Network (`gemini-3.8-flash-lite`, configurable via `GEMINI_MODEL`) |
+| **Reasoning Model** | Deterministic Pattern & Entity Matcher | Deep Neural Network (`gemini-3.5-flash-lite`, configurable via `GEMINI_MODEL`) |
 | **Execution Latency** | 2 ms – 15 ms | 400 ms – 1,800 ms (network + token generation) |
 | **Tool Calling Mechanism** | Direct invocation of tool functions | Autonomous LLM function calling via Genkit |
 | **Input Flexibility** | Common phrasing, keywords, standard syntax | Freeform conversational phrasing, complex syntax, typos |
@@ -83,7 +83,7 @@ const walletAssistantFlow = ai.defineFlow(
     if (hasApiKey) {
       try {
         const { googleAI } = require('@genkit-ai/google-genai');
-        const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash-lite';
+        const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
         const llmResponse = await ai.generate({
           model: googleAI.model(modelName),
           prompt: `You are an intelligent, helpful payment & digital wallet assistant.
@@ -574,7 +574,7 @@ In [`genkit-app/src/agent.js`](genkit-app/src/agent.js):
 ```javascript
 if (hasApiKey) {
   const { googleAI } = require('@genkit-ai/google-genai');
-  const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash-lite';
+  const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
   const llmResponse = await ai.generate({
     model: googleAI.model(modelName),
     prompt: `You are an intelligent, helpful payment & digital wallet assistant.
@@ -716,7 +716,7 @@ npm run chat
    * `"Could you please let me know Alice's remaining balance?"`
    * `"Hey assistant, I had lunch with Bob today. Please send him 25 bucks from my wallet."`
 2. The agent generates dynamic, conversational responses powered by Gemini.
-3. In the Genkit UI (`npm run ui` at `http://localhost:4000`), flow run traces will display model invocation spans (e.g. `gemini-3.8-flash-lite`) and token consumption metrics.
+3. In the Genkit UI (`npm run ui` at `http://localhost:4000`), flow run traces will display model invocation spans (e.g. `gemini-3.5-flash-lite`) and token consumption metrics.
 
 ---
 

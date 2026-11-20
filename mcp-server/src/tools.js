@@ -34,8 +34,8 @@ const CheckTopupStatusInput = z.object({
 // - description: z.string().optional()
 const ExecuteTransferInput = z.object({
   // TODO: Add fields here (refer to WORKSHOP_GUIDE.md Exercise 1.2)
-  senderId: z.string().describe('The wallet ID or name of the user sending the money (e.g. user_101)'),
-  recipientId: z.string().describe('The recipient ID or contact name (e.g. user_102, Bob, Bob Jones, Charlie)'),
+  senderId: z.string().optional().default('user_101').describe('The wallet ID or name of the sender (defaults to active user user_101)'),
+  recipientId: z.string().describe('The recipient ID or contact name (e.g. user_102, Bob, Bob Jones, Charlie Brown). You can pass the contact name directly.'),
   amount: z.number().positive().describe('The amount of money to transfer (must be greater than 0)'),
   description: z.string().optional().describe('Optional note or description for the transfer')
 });
@@ -143,9 +143,9 @@ const handlers = {
 
   // TODO [Exercise 1.10]: Implement executeTransfer
   async executeTransfer(args = {}) {
-    const { senderId, recipientId, amount, description } = args || {};
-    if (!senderId || !recipientId || !amount) {
-      return { success: false, error: 'senderId, recipientId, and positive amount are required' };
+    const { senderId = 'user_101', recipientId, amount, description } = args || {};
+    if (!recipientId || !amount) {
+      return { success: false, error: 'recipientId and positive amount are required' };
     }
     try {
       const res = await apiClient.executeTransfer({ senderId, recipientId, amount, description });

@@ -356,7 +356,7 @@ const walletAssistantFlow = ai.defineFlow(
     if (hasApiKey) {
       try {
         const { googleAI } = require('@genkit-ai/google-genai');
-        const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash-lite';
+        const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
         const llmResponse = await ai.generate({
           model: googleAI.model(modelName),
           prompt: `You are an intelligent, helpful payment & digital wallet assistant.
