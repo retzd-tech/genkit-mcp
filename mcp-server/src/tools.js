@@ -224,6 +224,12 @@ const handlers = {
 };
 
 module.exports = {
+  GetWalletBalanceInput,
+  CheckTransferStatusInput,
+  CheckTopupStatusInput,
+  ExecuteTransferInput,
+  InitiateTopupInput,
+  GetTransactionHistoryInput,
   schemas: {
     GetWalletBalanceInput,
     CheckTransferStatusInput,
