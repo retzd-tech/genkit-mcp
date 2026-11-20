@@ -187,7 +187,7 @@ If you are on the `workshop-starter` branch, follow these guided exercises. *(If
 * **Target File**: [`mcp-server/src/tools.js`](mcp-server/src/tools.js)
 
 A Tool consists of two parts:
-1. **Schema (`Zod`)**: Defines what parameters the AI must extract and supply.
+1. **Schema**: Defines what parameters the AI must extract and supply.
 2. **Handler Function**: The code that executes when the AI calls the tool (calling the backend REST API).
 
 #### Task 1.1: Define Input Schemas
