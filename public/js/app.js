@@ -1,6 +1,6 @@
 /**
- * Devfest Wallet - Mobile Web UI Controller
- * Integrates with Firebase Genkit & MCP Backend API
+ * Devfest Wallet - Minimalist & Elegant Assistant Controller
+ * Pure chat experience with live wallet metadata
  */
 
 (function () {
@@ -10,322 +10,128 @@
   let currentUserId = 'user_101';
   let isSending = false;
 
-  // DOM Elements
+  const USERS = {
+    user_101: { name: 'Alice Smith', avatar: '👩' },
+    user_102: { name: 'Bob Jones', avatar: '👨' },
+    user_103: { name: 'Charlie Brown', avatar: '👤' }
+  };
+
+  // Elements
   const userSelect = document.getElementById('userSelect');
-  const headerAvatar = document.getElementById('headerAvatar');
-  const refreshWalletBtn = document.getElementById('refreshWalletBtn');
+  const userAvatar = document.getElementById('userAvatar');
+  const resetDbBtn = document.getElementById('resetDbBtn');
   const cardBalanceAmount = document.getElementById('cardBalanceAmount');
-  const cardBalanceCurrency = document.getElementById('cardBalanceCurrency');
-  const cardHolderName = document.getElementById('cardHolderName');
-  const cardStatusBadge = document.getElementById('cardStatusBadge');
-  const cardTierBadge = document.getElementById('cardTierBadge');
+  const accountName = document.getElementById('accountName');
+  const accountStatus = document.getElementById('accountStatus');
+  const accountTier = document.getElementById('accountTier');
+  const greetingName = document.getElementById('greetingName');
 
-  // Profile elements in Wallet Tab
-  const detailName = document.getElementById('detailName');
-  const detailUserId = document.getElementById('detailUserId');
-  const detailEmail = document.getElementById('detailEmail');
-  const detailStatus = document.getElementById('detailStatus');
-  const detailTier = document.getElementById('detailTier');
-  const detailLimit = document.getElementById('detailLimit');
-
-  // Chat Elements
-  const chatMessages = document.getElementById('chatMessages');
+  const actionChips = document.getElementById('actionChips');
+  const chatContainer = document.getElementById('chatContainer');
   const chatForm = document.getElementById('chatForm');
   const chatInput = document.getElementById('chatInput');
-  const promptChips = document.getElementById('promptChips');
-  const engineBadge = document.getElementById('engineBadge');
-
-  // Activity Elements
-  const transactionList = document.getElementById('transactionList');
-  const refreshTxBtn = document.getElementById('refreshTxBtn');
-
-  // Toolbar & Frame Elements
-  const toggleViewBtn = document.getElementById('toggleViewBtn');
-  const viewIcon = document.getElementById('viewIcon');
-  const viewLabel = document.getElementById('viewLabel');
-  const resetDbGlobalBtn = document.getElementById('resetDbGlobalBtn');
-  const toastContainer = document.getElementById('toastContainer');
-
-  // Navigation Tabs
-  const navTabs = document.querySelectorAll('.nav-tab');
-  const viewPanels = document.querySelectorAll('.view-panel');
-
-  // Quick Action Buttons on Card
-  const cardActionBtns = document.querySelectorAll('.card-action-btn');
-
-  // Avatars by User
-  const AVATARS = {
-    user_101: '👩',
-    user_102: '👨',
-    user_103: '👤'
-  };
+  const toastWrapper = document.getElementById('toastWrapper');
 
   // ==========================================================================
   // Initialization
   // ==========================================================================
 
   async function init() {
-    setupEventListeners();
-    await refreshWalletData();
-    await refreshTransactions();
+    setupEvents();
+    await refreshWallet();
   }
 
-  // ==========================================================================
-  // Event Listeners
-  // ==========================================================================
-
-  function setupEventListeners() {
-    // 1. User selector change
+  function setupEvents() {
+    // 1. Switch User
     userSelect.addEventListener('change', async (e) => {
       currentUserId = e.target.value;
-      headerAvatar.textContent = AVATARS[currentUserId] || '👤';
-      showToast(`Switched account to ${userSelect.options[userSelect.selectedIndex].text.split('(')[0].trim()}`);
+      const user = USERS[currentUserId] || { name: 'User', avatar: '👤' };
+      userAvatar.textContent = user.avatar;
+      greetingName.textContent = user.name.split(' ')[0];
       
-      appendSystemMessage(`🔄 Active session switched to **${userSelect.options[userSelect.selectedIndex].text.split('(')[0].trim()}** (${currentUserId})`);
+      showToast(`Active account: ${user.name}`);
+      appendSystemNotice(`Active wallet switched to **${user.name}**.`);
       
-      await refreshWalletData();
-      await refreshTransactions();
+      await refreshWallet();
     });
 
-    // 2. Refresh Wallet Button
-    refreshWalletBtn.addEventListener('click', async () => {
-      refreshWalletBtn.style.transform = 'rotate(180deg)';
-      await refreshWalletData();
-      await refreshTransactions();
-      setTimeout(() => { refreshWalletBtn.style.transform = 'none'; }, 300);
-      showToast('Wallet balance refreshed');
+    // 2. Reset Database
+    resetDbBtn.addEventListener('click', async () => {
+      resetDbBtn.style.transform = 'rotate(180deg)';
+      setTimeout(() => { resetDbBtn.style.transform = 'none'; }, 300);
+
+      try {
+        const res = await fetch('/api/reset', { method: 'POST' });
+        const json = await res.json();
+        if (json.success) {
+          showToast('Database reset to seed balances');
+          appendSystemNotice('🔄 Database reset. Initial balances: Alice ($1,250.00), Bob ($320.50).');
+          await refreshWallet();
+        }
+      } catch (err) {
+        showToast('Reset failed');
+      }
     });
 
-    // 3. Chat form submission
-    chatForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const query = chatInput.value.trim();
-      if (!query || isSending) return;
-      chatInput.value = '';
-      await handleSendMessage(query);
-    });
-
-    // 4. Quick Suggestion Prompt Chips
-    promptChips.addEventListener('click', async (e) => {
+    // 3. Quick Action Chips
+    actionChips.addEventListener('click', (e) => {
       const chip = e.target.closest('.chip');
       if (!chip || isSending) return;
       const query = chip.getAttribute('data-query');
       if (query) {
-        await handleSendMessage(query);
+        sendMessage(query);
       }
     });
 
-    // 5. Card Quick Actions
-    cardActionBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const action = btn.getAttribute('data-action');
-        switchTab('viewChat');
-        if (action === 'transfer') {
-          chatInput.value = 'Transfer $35 to Bob for lunch';
-          chatInput.focus();
-        } else if (action === 'topup') {
-          chatInput.value = 'I want to top up $50 using virtual account';
-          chatInput.focus();
-        } else if (action === 'history') {
-          switchTab('viewActivity');
-        } else if (action === 'status') {
-          chatInput.value = 'Check status of transfer TRF-1001';
-          chatInput.focus();
-        }
-      });
-    });
-
-    // 6. Tab Navigation
-    navTabs.forEach((tab) => {
-      tab.addEventListener('click', () => {
-        const targetId = tab.getAttribute('data-target');
-        switchTab(targetId);
-      });
-    });
-
-    // 7. Activity Refresh Button
-    if (refreshTxBtn) {
-      refreshTxBtn.addEventListener('click', async () => {
-        await refreshTransactions();
-        showToast('Transactions updated');
-      });
-    }
-
-    // 8. Toggle Presentation View (Phone frame vs full width)
-    toggleViewBtn.addEventListener('click', () => {
-      const isPhoneMode = document.body.classList.contains('phone-mode');
-      if (isPhoneMode) {
-        document.body.classList.remove('phone-mode');
-        document.body.classList.add('full-mode');
-        viewIcon.textContent = '🖥️';
-        viewLabel.textContent = 'Phone Frame View';
-        showToast('Switched to Full Screen view');
-      } else {
-        document.body.classList.remove('full-mode');
-        document.body.classList.add('phone-mode');
-        viewIcon.textContent = '📱';
-        viewLabel.textContent = 'Full Screen View';
-        showToast('Switched to Mobile Phone Frame');
-      }
-    });
-
-    // 9. Reset DB Button
-    resetDbGlobalBtn.addEventListener('click', async () => {
-      if (confirm('Restore wallet database to clean initial seed state? (Alice: $1,250, Bob: $320.50)')) {
-        await resetDatabase();
-      }
+    // 4. Form Submit
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const query = chatInput.value.trim();
+      if (!query || isSending) return;
+      chatInput.value = '';
+      sendMessage(query);
     });
   }
 
   // ==========================================================================
-  // Tab Switching Helper
+  // Wallet Data
   // ==========================================================================
 
-  function switchTab(panelId) {
-    navTabs.forEach((tab) => {
-      const isTarget = tab.getAttribute('data-target') === panelId;
-      tab.classList.toggle('active', isTarget);
-      tab.setAttribute('aria-selected', isTarget ? 'true' : 'false');
-    });
-
-    viewPanels.forEach((panel) => {
-      if (panel.id === panelId) {
-        panel.classList.add('active');
-        panel.removeAttribute('hidden');
-      } else {
-        panel.classList.remove('active');
-        panel.setAttribute('hidden', 'true');
-      }
-    });
-  }
-
-  // ==========================================================================
-  // Backend API Communication
-  // ==========================================================================
-
-  async function refreshWalletData() {
+  async function refreshWallet() {
     try {
       const res = await fetch(`/api/wallets/${encodeURIComponent(currentUserId)}`);
       const json = await res.json();
-      if (!json.success || !json.data) throw new Error(json.error || 'Failed to fetch wallet');
+      if (!json.success || !json.data) return;
 
       const wallet = json.data;
-
-      // Update Card
       cardBalanceAmount.textContent = `$${wallet.balance.toFixed(2)}`;
-      cardBalanceCurrency.textContent = wallet.currency || 'USD';
-      cardHolderName.textContent = wallet.name;
-      cardStatusBadge.textContent = wallet.status;
-      cardStatusBadge.className = `badge badge-status ${wallet.status}`;
-      cardTierBadge.textContent = wallet.tier || 'STANDARD';
-
-      // Update Profile Grid
-      detailName.textContent = wallet.name;
-      detailUserId.textContent = wallet.userId;
-      detailEmail.textContent = wallet.email;
-      detailStatus.textContent = wallet.status;
-      detailTier.textContent = wallet.tier;
-      detailLimit.textContent = `$${wallet.dailyLimit ? wallet.dailyLimit.toFixed(2) : '1000.00'}`;
+      accountName.textContent = wallet.name;
+      
+      accountStatus.textContent = wallet.status === 'ACTIVE' ? 'Active' : 'Frozen';
+      accountStatus.className = `pill pill-status ${wallet.status === 'ACTIVE' ? 'active' : 'frozen'}`;
+      
+      accountTier.textContent = wallet.tier === 'PREMIUM' ? 'Premium' : 'Standard';
 
     } catch (err) {
-      console.warn('[Wallet Refresh Error]', err);
-    }
-  }
-
-  async function refreshTransactions() {
-    try {
-      const res = await fetch(`/api/wallets/${encodeURIComponent(currentUserId)}/transactions?limit=10`);
-      const json = await res.json();
-      if (!json.success || !json.data) throw new Error(json.error || 'Failed to fetch transactions');
-
-      const txs = json.data;
-      renderTransactionList(txs);
-    } catch (err) {
-      console.warn('[Transactions Refresh Error]', err);
-    }
-  }
-
-  function renderTransactionList(transactions) {
-    if (!transactions || transactions.length === 0) {
-      transactionList.innerHTML = `<div class="empty-state">No past transactions found for this account.</div>`;
-      return;
-    }
-
-    transactionList.innerHTML = transactions.map((tx) => {
-      let iconClass = 'tx-icon-out';
-      let icon = '📤';
-      let sign = '-';
-      let amtClass = 'negative';
-
-      if (tx.type === 'TRANSFER_IN') {
-        iconClass = 'tx-icon-in';
-        icon = '📥';
-        sign = '+';
-        amtClass = 'positive';
-      } else if (tx.type === 'TOPUP') {
-        iconClass = 'tx-icon-topup';
-        icon = '💳';
-        sign = '+';
-        amtClass = 'positive';
-      }
-
-      const dateStr = new Date(tx.timestamp).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      return `
-        <div class="tx-item">
-          <div class="tx-left">
-            <div class="tx-icon ${iconClass}">${icon}</div>
-            <div>
-              <div class="tx-title">${escapeHtml(tx.description || tx.counterparty || tx.id)}</div>
-              <div class="tx-meta">${dateStr} • Ref: ${tx.referenceId || tx.id}</div>
-            </div>
-          </div>
-          <div class="tx-right">
-            <div class="tx-amount ${amtClass}">${sign}$${Math.abs(tx.amount).toFixed(2)}</div>
-            <span class="tx-badge ${tx.status}">${tx.status}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  async function resetDatabase() {
-    try {
-      const res = await fetch('/api/reset', { method: 'POST' });
-      const json = await res.json();
-      if (json.success) {
-        showToast('Database reset to pristine seed state!');
-        appendSystemMessage('🔄 **System**: Database has been restored to clean seed data. Initial balances: Alice = $1,250.00, Bob = $320.50.');
-        await refreshWalletData();
-        await refreshTransactions();
-      } else {
-        showToast(`Reset failed: ${json.error}`);
-      }
-    } catch (err) {
-      showToast(`Error resetting database: ${err.message}`);
+      console.warn('Wallet refresh failed:', err);
     }
   }
 
   // ==========================================================================
-  // Chat Messaging Logic
+  // Chat Messaging
   // ==========================================================================
 
-  async function handleSendMessage(query) {
+  async function sendMessage(query) {
     if (isSending) return;
     isSending = true;
 
-    // Append User Message Bubble
-    appendUserMessage(query);
+    // Append User Bubble
+    appendUserBubble(query);
 
-    // Show Typing Indicator
+    // Append Typing Indicator
     const typingIndicator = createTypingIndicator();
-    chatMessages.appendChild(typingIndicator);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    chatContainer.appendChild(typingIndicator);
+    scrollToBottom();
 
     try {
       const response = await fetch('/api/chat', {
@@ -341,149 +147,135 @@
       typingIndicator.remove();
 
       if (json.success && json.data) {
-        const agentData = json.data;
+        const agent = json.data;
+        appendAssistantBubble(agent.response, agent.toolCalls);
 
-        // Update engine badge if specified
-        if (agentData.data && agentData.data.mode === 'gemini-llm') {
-          engineBadge.innerHTML = `<span class="badge-dot" style="background:#ea4335"></span> Gemini Cloud LLM`;
-        } else {
-          engineBadge.innerHTML = `<span class="badge-dot"></span> Offline Reasoning Engine`;
-        }
-
-        // Append Assistant Bubble
-        appendAssistantMessage(agentData.response, agentData.toolCalls);
-
-        // Always refresh wallet and transaction list if state might have changed
-        await refreshWalletData();
-        await refreshTransactions();
-
+        // Update balance if a transfer or topup occurred
+        await refreshWallet();
       } else {
-        appendAssistantMessage(`❌ Sorry, an error occurred while processing your request: ${json.error || 'Unknown error'}`);
+        appendAssistantBubble(`I encountered an issue processing that: ${json.error || 'Server error'}`);
       }
 
     } catch (err) {
       typingIndicator.remove();
-      appendAssistantMessage(`❌ Network error communicating with Assistant API: ${err.message}`);
+      appendAssistantBubble(`Could not connect to assistant: ${err.message}`);
     } finally {
       isSending = false;
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+      scrollToBottom();
     }
   }
 
-  function appendUserMessage(text) {
+  function appendUserBubble(text) {
     const bubble = document.createElement('div');
-    bubble.className = 'message-bubble message-user';
-    bubble.innerHTML = `
-      <div class="message-avatar">${AVATARS[currentUserId] || '👤'}</div>
-      <div class="message-body">
-        <div class="message-header">
-          <span class="author-name">You</span>
-          <span class="message-time">Just now</span>
-        </div>
-        <div class="message-text">${escapeHtml(text)}</div>
-      </div>
-    `;
-    chatMessages.appendChild(bubble);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    bubble.className = 'bubble user';
+    bubble.innerHTML = `<div class="bubble-content">${escapeHtml(text)}</div>`;
+    chatContainer.appendChild(bubble);
+    scrollToBottom();
   }
 
-  function appendAssistantMessage(markdownText, toolCalls = []) {
+  function appendAssistantBubble(markdownText, toolCalls = []) {
     const bubble = document.createElement('div');
-    bubble.className = 'message-bubble message-assistant';
+    bubble.className = 'bubble assistant';
 
-    let toolsHtml = '';
+    // Tool execution pill
+    let toolPillHtml = '';
     if (toolCalls && toolCalls.length > 0) {
       toolCalls.forEach((call) => {
         if (!call || !call.tool || call.tool === 'none') return;
-        toolsHtml += `
-          <div class="mcp-call-card">
-            <div class="mcp-call-header" onclick="this.parentElement.classList.toggle('open')">
-              <span>🛠️ <strong>MCP Tool Invoked:</strong> <code>${escapeHtml(call.tool)}</code></span>
-              <span class="mcp-toggle-icon">▼</span>
+
+        // Clean tool name for human display
+        const friendlyName = call.tool.replace(/_/g, ' ');
+        const detailsJson = JSON.stringify({
+          tool: call.tool,
+          arguments: sanitizePayload(call.args),
+          result: sanitizePayload(call.result)
+        }, null, 2);
+
+        toolPillHtml += `
+          <div class="mcp-pill-wrapper">
+            <div class="mcp-pill" onclick="this.parentElement.classList.toggle('open')">
+              <span>⚡ Tool: <strong>${escapeHtml(friendlyName)}</strong></span>
             </div>
-            <div class="mcp-call-details">
-              <strong>Arguments:</strong>
-              <div class="mcp-code-block">${escapeHtml(JSON.stringify(call.args || {}, null, 2))}</div>
-              <strong style="margin-top:6px;display:block;">Backend API Result via MCP:</strong>
-              <div class="mcp-code-block">${escapeHtml(JSON.stringify(call.result || {}, null, 2))}</div>
-            </div>
+            <div class="mcp-dropdown-content">${escapeHtml(detailsJson)}</div>
           </div>
         `;
       });
     }
 
     bubble.innerHTML = `
-      <div class="message-avatar">🤖</div>
-      <div class="message-body">
-        <div class="message-header">
-          <span class="author-name">Devfest Assistant</span>
-          <span class="message-time">Just now</span>
-        </div>
-        <div class="message-text">
-          ${formatMarkdown(markdownText)}
-          ${toolsHtml}
-        </div>
+      <div class="bubble-header">
+        <span class="bubble-sender">Devfest Assistant</span>
+      </div>
+      <div class="bubble-content">
+        ${renderMarkdown(markdownText)}
+        ${toolPillHtml}
       </div>
     `;
-    chatMessages.appendChild(bubble);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    chatContainer.appendChild(bubble);
+    scrollToBottom();
   }
 
-  function appendSystemMessage(markdownText) {
+  function appendSystemNotice(markdownText) {
     const bubble = document.createElement('div');
-    bubble.className = 'message-bubble message-assistant';
+    bubble.className = 'bubble assistant';
     bubble.innerHTML = `
-      <div class="message-avatar">⚙️</div>
-      <div class="message-body">
-        <div class="message-header">
-          <span class="author-name">System Notice</span>
-        </div>
-        <div class="message-text" style="background:#fef7e0;border-color:#fbbc05;">
-          ${formatMarkdown(markdownText)}
-        </div>
+      <div class="bubble-content" style="background:#fef7e0;border-color:#f9ab00;color:#7a4400;font-size:0.82rem;">
+        ${renderMarkdown(markdownText)}
       </div>
     `;
-    chatMessages.appendChild(bubble);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    chatContainer.appendChild(bubble);
+    scrollToBottom();
   }
 
   function createTypingIndicator() {
     const div = document.createElement('div');
-    div.className = 'typing-indicator';
+    div.className = 'typing-pill';
     div.innerHTML = `
-      <span class="typing-dot dot-1"></span>
-      <span class="typing-dot dot-2"></span>
-      <span class="typing-dot dot-3"></span>
-      <span class="typing-dot dot-4"></span>
-      <span style="font-size:0.75rem;color:#5f6368;margin-left:4px;">Assistant thinking & querying MCP tools...</span>
+      <span class="t-dot t-blue"></span>
+      <span class="t-dot t-red"></span>
+      <span class="t-dot t-yellow"></span>
+      <span class="t-dot t-green"></span>
     `;
     return div;
   }
 
   // ==========================================================================
-  // Helpers
+  // Formatting & Sanitization
   // ==========================================================================
 
-  function formatMarkdown(text) {
+  // Strip technical primary keys like user_101 from visual payload inspection
+  function sanitizePayload(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    const copy = Array.isArray(obj) ? [...obj] : { ...obj };
+    
+    // Replace user ID with user name if known
+    if (copy.userId && USERS[copy.userId]) copy.userId = USERS[copy.userId].name;
+    if (copy.senderId && USERS[copy.senderId]) copy.senderId = USERS[copy.senderId].name;
+    if (copy.recipientId && USERS[copy.recipientId]) copy.recipientId = USERS[copy.recipientId].name;
+    
+    return copy;
+  }
+
+  function renderMarkdown(text) {
     if (!text) return '';
-    let formatted = escapeHtml(text);
+    let html = escapeHtml(text);
 
     // Bold **text**
-    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     
     // Italic *text*
-    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
     
     // Inline code `code`
-    formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+    html = html.replace(/`([^`]+)`/g, '<code style="background:#f1f3f4;padding:2px 5px;border-radius:4px;font-size:0.82em;">$1</code>');
 
     // Bullet lists
-    formatted = formatted.replace(/^- (.*$)/gim, '• $1<br>');
+    html = html.replace(/^- (.*$)/gim, '• $1<br>');
     
     // Line breaks
-    formatted = formatted.replace(/\n/g, '<br>');
+    html = html.replace(/\n/g, '<br>');
 
-    return formatted;
+    return html;
   }
 
   function escapeHtml(str) {
@@ -496,19 +288,22 @@
       .replace(/'/g, '&#039;');
   }
 
+  function scrollToBottom() {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
   function showToast(msg) {
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.textContent = msg;
-    toastContainer.appendChild(toast);
+    toastWrapper.appendChild(toast);
     setTimeout(() => {
       toast.style.opacity = '0';
-      toast.style.transition = 'opacity 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
-    }, 2800);
+      toast.style.transition = 'opacity 0.25s';
+      setTimeout(() => toast.remove(), 250);
+    }, 2200);
   }
 
-  // Run on page load
   window.addEventListener('DOMContentLoaded', init);
 
 })();
