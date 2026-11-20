@@ -35,7 +35,7 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
   const q = query.trim();
   const lower = q.toLowerCase();
 
-  // TODO [Exercise 4.2 - Branch 1]: Transfer Status check
+  // [Reference Example 4.2]: Intent Branch 1 — Check Transfer Status
   const trfMatch = q.match(/\b(TRF-\d+|REF-TRF-\d+)\b/i);
   if ((lower.includes('transfer') && (lower.includes('status') || lower.includes('check'))) || trfMatch) {
     const transferId = trfMatch ? trfMatch[1] : 'TRF-1002';
@@ -63,26 +63,26 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
     };
   }
 
-  // TODO [Exercise 4.2 - Branch 2]: Top-up Status check & Initiate Top-up
-  // Hint:
+  // TODO [Exercise 4.3]: Intent Branch 2 — Check & Initiate Top-Up
+  // Requirements:
   // - Check status if prompt has "status" or "what is happening" or matches /\b(TOP-\d+|REF-TOP-\d+)\b/i
   // - Initiate top-up if prompt has "top up $X using virtual account"
-  // YOUR CODE HERE (refer to HANDS_ON_WORKSHOP.md Exercise 4)
+  // YOUR CODE HERE (refer to HANDS_ON_WORKSHOP.md Exercise 4.3)
 
-  // TODO [Exercise 4.2 - Branch 3]: Inquire History or Latest Transfer
-  // Hint:
+  // TODO [Exercise 4.4]: Intent Branch 3 — Inquire Transaction History & Statement
+  // Requirements:
   // - Check if prompt includes 'history', 'transactions', 'statement', 'latest'
   // - Query getTransactionHistoryTool({ userId, limit: 10 })
-  // YOUR CODE HERE (refer to HANDS_ON_WORKSHOP.md Exercise 4)
+  // YOUR CODE HERE (refer to HANDS_ON_WORKSHOP.md Exercise 4.4)
 
-  // TODO [Exercise 4.2 - Branch 4]: Execute Money Transfer
-  // Hint:
+  // TODO [Exercise 4.5]: Intent Branch 4 — Money Transfer Execution with Guardrail
+  // Requirements:
   // - Check if prompt includes 'transfer', 'send', 'pay'
-  // - Guard: if no amount specified, prompt user for details!
+  // - 🛡️ Guardrail: if no amount specified, prompt user for details!
   // - Parse amount and recipient, call executeTransferTool
-  // YOUR CODE HERE (refer to HANDS_ON_WORKSHOP.md Exercise 4)
+  // YOUR CODE HERE (refer to HANDS_ON_WORKSHOP.md Exercise 4.5)
 
-  // 5. Balance Inquiry: default
+  // [Reference Example 4.6]: Intent Branch 5 — Balance Inquiry Fallback
   const userMatch = q.match(/user_\d+/i);
   const userId = userMatch ? userMatch[0] : defaultUserId;
   const result = await getWalletBalanceTool({ userId });

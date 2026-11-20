@@ -179,64 +179,105 @@ npm run e2e
 
 ## Part 3: Code Exercises — Building the MCP & Genkit Architecture (60 mins)
 
-If you are on the `workshop-starter` branch, follow these guided exercises. *(If on `main`, review the code implementations).*
+If you are on the `workshop-starter` branch (`git checkout workshop-starter`), follow these guided exercises step-by-step. Each exercise in this guide directly corresponds to a `// TODO [Exercise X.Y]` marker in the starter codebase.
+
+*(If you are on `main`, this section serves as the complete technical code walkthrough).*
 
 ---
 
 ### Exercise 1: Implementing Tool Schemas & Handlers
 * **Target File**: [`mcp-server/src/tools.js`](mcp-server/src/tools.js)
 
-A Tool consists of two parts:
-1. **Schema (`Zod`)**: Defines what parameters the AI must extract and supply.
-2. **Handler Function**: The code that executes when the AI calls the tool (calling the backend REST API).
+A Model Context Protocol (MCP) Tool consists of two core components:
+1. **Zod Input Schema**: Strongly defines the arguments the AI model must extract from natural language inquiries.
+2. **Execution Handler Function**: The asynchronous code that executes when the AI model invokes the tool (calling the underlying Node.js Core Banking REST API).
 
-#### Task 1.1: Define Input Schemas
-In [`mcp-server/src/tools.js`](mcp-server/src/tools.js), note how `z` is imported from `genkit`:
+---
+
+#### Exercise 1.1 [Reference Example]: Balance Schema (`GetWalletBalanceInput`)
+In [`mcp-server/src/tools.js`](mcp-server/src/tools.js), note how `z` is imported from `genkit` (which re-exports Zod):
 ```javascript
 const { z } = require('genkit');
 const { apiClient } = require('../../backend/src/client');
 
-// 1. Balance Schema
+// [Reference Example 1.1]: Balance Schema
 const GetWalletBalanceInput = z.object({
   userId: z.string().describe('The unique identifier of the user/wallet (e.g., user_101, user_102)')
 });
+```
 
-// 2. Transfer Status Schema
+---
+
+#### Exercise 1.2: Transfer Status Schema (`CheckTransferStatusInput`)
+* **Task**: Define the schema for inquiring the status of past money transfers.
+* **Requirements**: Accept `transferId` as a string with a descriptive annotation so the AI knows it accepts IDs like `TRF-1001` or `REF-TRF-001`.
+```javascript
+// TODO [Exercise 1.2]: Define CheckTransferStatusInput schema
 const CheckTransferStatusInput = z.object({
   transferId: z.string().describe('The transfer ID (e.g. TRF-1001) or reference ID (e.g. REF-TRF-001) to check')
 });
+```
 
-// 3. Top-Up Status Schema
+---
+
+#### Exercise 1.3: Top-Up Status Schema (`CheckTopupStatusInput`)
+* **Task**: Define the schema for querying top-up transactions.
+* **Requirements**: Accept `topupId` as a string.
+```javascript
+// TODO [Exercise 1.3]: Define CheckTopupStatusInput schema
 const CheckTopupStatusInput = z.object({
   topupId: z.string().describe('The top-up ID (e.g. TOP-5001) or reference ID (e.g. REF-TOP-001) to check')
 });
+```
 
-// 4. Fund Transfer Execution Schema
+---
+
+#### Exercise 1.4: Fund Transfer Execution Schema (`ExecuteTransferInput`)
+* **Task**: Define the schema for wallet-to-wallet fund transfers.
+* **Requirements**: Validate `senderId`, `recipientId`, a positive `amount`, and optional `description`.
+```javascript
+// TODO [Exercise 1.4]: Define ExecuteTransferInput schema
 const ExecuteTransferInput = z.object({
   senderId: z.string().describe('The wallet ID of the user sending the money (e.g. user_101)'),
   recipientId: z.string().describe('The wallet ID of the recipient receiving the money (e.g. user_102)'),
   amount: z.number().positive().describe('The amount of money to transfer (must be greater than 0)'),
   description: z.string().optional().describe('Optional note or description for the transfer')
 });
+```
 
-// 5. Initiate Top-Up Schema
+---
+
+#### Exercise 1.5: Initiate Top-Up Schema (`InitiateTopupInput`)
+* **Task**: Define the schema for initiating digital wallet top-ups.
+* **Requirements**: Accept `userId`, positive `amount`, and enum `paymentMethod` defaulting to `VIRTUAL_ACCOUNT`.
+```javascript
+// TODO [Exercise 1.5]: Define InitiateTopupInput schema
 const InitiateTopupInput = z.object({
   userId: z.string().describe('The wallet user ID to be credited (e.g. user_101)'),
   amount: z.number().positive().describe('The amount to top up into the wallet'),
   paymentMethod: z.enum(['VIRTUAL_ACCOUNT', 'CREDIT_CARD', 'BANK_TRANSFER']).default('VIRTUAL_ACCOUNT').describe('Preferred payment channel')
 });
+```
 
-// 6. Transaction History Schema
+---
+
+#### Exercise 1.6: Transaction History Schema (`GetTransactionHistoryInput`)
+* **Task**: Define the schema for retrieving transaction statements.
+* **Requirements**: Accept `userId` and an optional `limit` bounded between 1 and 50 (defaulting to 10).
+```javascript
+// TODO [Exercise 1.6]: Define GetTransactionHistoryInput schema
 const GetTransactionHistoryInput = z.object({
   userId: z.string().describe('The wallet user ID whose history is being requested'),
   limit: z.number().min(1).max(50).default(10).optional().describe('Maximum number of recent transactions to return')
 });
 ```
 
-#### Task 1.2: Implement Handlers
-Connect each tool to `apiClient`:
+---
+
+#### Exercise 1.7 [Reference Example]: Balance Handler (`getWalletBalance`)
+Tool handlers connect to the backend REST client via `apiClient`:
 ```javascript
-const handlers = {
+  // [Reference Example 1.7]: getWalletBalance handler
   async getWalletBalance(args = {}) {
     const { userId = 'user_101' } = args || {};
     try {
@@ -257,11 +298,87 @@ const handlers = {
       return { success: false, error: err.message };
     }
   },
+```
 
+---
+
+#### Exercise 1.8: Check Transfer Status Handler (`checkTransferStatus`)
+* **Task**: Implement status lookup by calling `apiClient.getTransferStatus(transferId)`.
+```javascript
+  // TODO [Exercise 1.8]: Implement checkTransferStatus
+  async checkTransferStatus(args = {}) {
+    const { transferId } = args || {};
+    if (!transferId) return { success: false, error: 'transferId is required' };
+    try {
+      const transfer = await apiClient.getTransferStatus(transferId);
+      return {
+        success: true,
+        transferId: transfer.transferId,
+        referenceId: transfer.referenceId,
+        status: transfer.status,
+        sender: transfer.senderName,
+        recipient: transfer.recipientName,
+        amount: transfer.amount,
+        currency: transfer.currency,
+        formattedAmount: `$${transfer.amount.toFixed(2)} ${transfer.currency}`,
+        description: transfer.description,
+        timestamp: transfer.timestamp,
+        failureReason: transfer.failureReason || null
+      };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+```
+
+---
+
+#### Exercise 1.9: Check Top-Up Status Handler (`checkTopupStatus`)
+* **Task**: Implement top-up status lookup by calling `apiClient.getTopupStatus(topupId)`.
+```javascript
+  // TODO [Exercise 1.9]: Implement checkTopupStatus
+  async checkTopupStatus(args = {}) {
+    const { topupId } = args || {};
+    if (!topupId) return { success: false, error: 'topupId is required' };
+    try {
+      const topup = await apiClient.getTopupStatus(topupId);
+      return {
+        success: true,
+        topupId: topup.topupId,
+        referenceId: topup.referenceId,
+        userId: topup.userId,
+        userName: topup.userName,
+        amount: topup.amount,
+        currency: topup.currency,
+        formattedAmount: `$${topup.amount.toFixed(2)} ${topup.currency}`,
+        paymentMethod: topup.paymentMethod,
+        status: topup.status,
+        statusDetail: topup.statusDetail || (topup.status === 'SUCCESS' ? 'Funds successfully credited' : 'Pending payment confirmation'),
+        virtualAccountNumber: topup.virtualAccountNumber || null,
+        bank: topup.bank || null,
+        timestamp: topup.timestamp
+      };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+```
+
+---
+
+#### Exercise 1.10: Execute Transfer Handler (`executeTransfer`)
+* **Task**: Implement fund transfer execution calling `apiClient.executeTransfer`.
+```javascript
+  // TODO [Exercise 1.10]: Implement executeTransfer
   async executeTransfer(args = {}) {
     const { senderId, recipientId, amount, description } = args || {};
+    if (!senderId || !recipientId || !amount) {
+      return { success: false, error: 'senderId, recipientId, and positive amount are required' };
+    }
     try {
-      const transfer = await apiClient.transferFunds({ senderId, recipientId, amount, description });
+      const res = await apiClient.executeTransfer({ senderId, recipientId, amount, description });
+      const transfer = res.transfer || res;
+      const remainingBalance = res.remainingBalance !== undefined ? res.remainingBalance : transfer.remainingBalance;
       return {
         success: true,
         transferId: transfer.transferId,
@@ -273,64 +390,225 @@ const handlers = {
         amount: transfer.amount,
         currency: transfer.currency,
         formattedAmount: `$${transfer.amount.toFixed(2)} ${transfer.currency}`,
-        remainingBalance: transfer.remainingBalance,
-        formattedRemainingBalance: `$${transfer.remainingBalance.toFixed(2)} ${transfer.currency}`,
+        remainingBalance: remainingBalance,
+        formattedRemainingBalance: remainingBalance !== undefined ? `$${remainingBalance.toFixed(2)} ${transfer.currency}` : undefined,
         timestamp: transfer.timestamp
       };
     } catch (err) {
       return { success: false, error: err.message };
     }
-  }
-  // (checkTransferStatus, checkTopupStatus, initiateTopup, getTransactionHistory follow the same pattern)
-};
+  },
 ```
 
 ---
 
-### Exercise 2: Building the Standard MCP Server
+#### Exercise 1.11: Initiate Top-Up Handler (`initiateTopup`)
+* **Task**: Implement top-up creation by calling `apiClient.initiateTopup`.
+```javascript
+  // TODO [Exercise 1.11]: Implement initiateTopup
+  async initiateTopup(args = {}) {
+    const { userId, amount, paymentMethod } = args || {};
+    if (!userId || !amount) {
+      return { success: false, error: 'userId and positive amount are required' };
+    }
+    try {
+      const topup = await apiClient.initiateTopup({ userId, amount, paymentMethod });
+      const instructions = topup.paymentInstructions || {
+        virtualAccountNumber: topup.virtualAccountNumber,
+        bank: topup.bank,
+        expiryTime: topup.expiryTime,
+        checkoutUrl: topup.checkoutUrl,
+        bankName: topup.bankName,
+        bankAccountNumber: topup.bankAccountNumber,
+        accountName: topup.accountName
+      };
+      return {
+        success: true,
+        topupId: topup.topupId,
+        referenceId: topup.referenceId,
+        userId: topup.userId,
+        amount: topup.amount,
+        currency: topup.currency,
+        formattedAmount: `$${topup.amount.toFixed(2)} ${topup.currency}`,
+        paymentMethod: topup.paymentMethod,
+        status: topup.status,
+        paymentInstructions: instructions,
+        virtualAccountNumber: topup.virtualAccountNumber || instructions.virtualAccountNumber || null,
+        bank: topup.bank || instructions.bank || null,
+        expiryTime: topup.expiryTime || instructions.expiryTime || null,
+        checkoutUrl: topup.checkoutUrl || instructions.checkoutUrl || null,
+        timestamp: topup.timestamp
+      };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+```
+
+---
+
+#### Exercise 1.12: Transaction History Handler (`getTransactionHistory`)
+* **Task**: Implement history retrieval by calling `apiClient.getTransactionHistory`.
+```javascript
+  // TODO [Exercise 1.12]: Implement getTransactionHistory
+  async getTransactionHistory(args = {}) {
+    const { userId = 'user_101', limit = 10 } = args || {};
+    try {
+      const transactions = await apiClient.getTransactionHistory(userId, limit);
+      return {
+        success: true,
+        userId,
+        count: transactions.length,
+        transactions: transactions.map((tx) => ({
+          id: tx.id,
+          referenceId: tx.referenceId,
+          type: tx.type,
+          counterparty: tx.counterparty,
+          amount: tx.amount,
+          currency: tx.currency,
+          formattedAmount: `${tx.amount < 0 ? '-' : '+'}$${Math.abs(tx.amount).toFixed(2)} ${tx.currency}`,
+          status: tx.status,
+          description: tx.description,
+          timestamp: tx.timestamp
+        }))
+      };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+```
+
+---
+
+### Exercise 2: Building the Standard MCP Server on `stdio`
 * **Target File**: [`mcp-server/src/std-mcp-server.js`](mcp-server/src/std-mcp-server.js)
 
-The standard MCP server exposes our tools over `stdio` using `@modelcontextprotocol/sdk`:
+The standard Model Context Protocol (MCP) server allows external AI clients (**Claude Desktop**, **Cursor IDE**, and **Antigravity**) to discover and execute our wallet tools over standard input/output (`stdio`).
 
 ```javascript
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
-const { schemas, handlers } = require('./tools');
+const {
+  GetWalletBalanceInput,
+  CheckTransferStatusInput,
+  CheckTopupStatusInput,
+  ExecuteTransferInput,
+  InitiateTopupInput,
+  GetTransactionHistoryInput,
+  handlers
+} = require('./tools');
 
 const server = new McpServer({
   name: 'wallet-payment-mcp-server',
-  version: '1.0.0'
+  version: '1.0.0',
+  description: 'MCP Server providing payment & digital wallet operations backed by Node.js Core Banking API'
 });
+```
 
-// Register get_wallet_balance
+---
+
+#### Exercise 2.1 [Reference Example]: Register `get_wallet_balance`
+```javascript
+// [Reference Example 2.1]: Register get_wallet_balance
 server.tool(
   'get_wallet_balance',
   'Retrieve current wallet balance, currency, account holder details, and status for a given user ID.',
-  schemas.GetWalletBalanceInput.shape,
+  GetWalletBalanceInput.shape,
   async (args) => {
     const result = await handlers.getWalletBalance(args);
     return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
   }
 );
+```
 
-// Register execute_transfer
+---
+
+#### Exercise 2.2: Register `check_transfer_status`
+```javascript
+// TODO [Exercise 2.2]: Register check_transfer_status
+server.tool(
+  'check_transfer_status',
+  'Inquire transfer status, parties, timestamp, and failure reason (if any) using transfer ID or reference ID.',
+  CheckTransferStatusInput.shape,
+  async (args) => {
+    const result = await handlers.checkTransferStatus(args);
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  }
+);
+```
+
+---
+
+#### Exercise 2.3: Register `check_topup_status`
+```javascript
+// TODO [Exercise 2.3]: Register check_topup_status
+server.tool(
+  'check_topup_status',
+  'Inquire top-up status, payment method, virtual account or settlement information by topup ID or reference ID.',
+  CheckTopupStatusInput.shape,
+  async (args) => {
+    const result = await handlers.checkTopupStatus(args);
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  }
+);
+```
+
+---
+
+#### Exercise 2.4: Register `execute_transfer`
+```javascript
+// TODO [Exercise 2.4]: Register execute_transfer
 server.tool(
   'execute_transfer',
   'Execute a wallet-to-wallet transfer from sender to recipient. Deducts sender balance and credits recipient balance.',
-  schemas.ExecuteTransferInput.shape,
+  ExecuteTransferInput.shape,
   async (args) => {
     const result = await handlers.executeTransfer(args);
     return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
   }
 );
-
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-}
-
-main().catch(console.error);
 ```
+
+---
+
+#### Exercise 2.5: Register `initiate_topup`
+```javascript
+// TODO [Exercise 2.5]: Register initiate_topup
+server.tool(
+  'initiate_topup',
+  'Initiate a wallet balance top-up for a user via VIRTUAL_ACCOUNT, CREDIT_CARD, or BANK_TRANSFER.',
+  InitiateTopupInput.shape,
+  async (args) => {
+    const result = await handlers.initiateTopup(args);
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  }
+);
+```
+
+---
+
+#### Exercise 2.6: Register `get_transaction_history`
+```javascript
+// TODO [Exercise 2.6]: Register get_transaction_history
+server.tool(
+  'get_transaction_history',
+  'Retrieve recent transaction history (inflows, outflows, and topups) for a wallet user account.',
+  GetTransactionHistoryInput.shape,
+  async (args) => {
+    const result = await handlers.getTransactionHistory(args);
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  }
+);
+```
+
+---
+
+#### Verification: Test Standard MCP Server
+Run the standard MCP server:
+```bash
+npm run mcp:std
+```
+*(The server connects to `stdio` and logs `[Standard MCP] Wallet Payment MCP Server running on stdio`. Press `Ctrl+C` to stop).*
 
 ---
 
@@ -339,48 +617,63 @@ main().catch(console.error);
   * [`genkit-app/src/genkit.js`](genkit-app/src/genkit.js)
   * [`mcp-server/src/genkit-mcp-server.js`](mcp-server/src/genkit-mcp-server.js)
 
-#### Task 3.1: Shared Genkit Instance
-In [`genkit-app/src/genkit.js`](genkit-app/src/genkit.js), initialize the single shared instance:
+Firebase Genkit uses `ai.defineTool()` to register tools with strongly-typed Zod schemas on the shared Genkit instance.
+
+---
+
+#### Exercise 3.1 [Reference Example]: Tool `get_wallet_balance`
 ```javascript
-require('dotenv').config();
-const { genkit } = require('genkit');
-
-let plugins = [];
-if (process.env.GEMINI_API_KEY) {
-  try {
-    const { googleAI } = require('@genkit-ai/google-genai');
-    plugins.push(googleAI());
-  } catch (err) {
-    console.warn('[Genkit] Could not load @genkit-ai/google-genai:', err.message);
-  }
-}
-
-const ai = genkit({ plugins });
-module.exports = { ai };
-```
-
-#### Task 3.2: Register Tools with `ai.defineTool`
-In [`mcp-server/src/genkit-mcp-server.js`](mcp-server/src/genkit-mcp-server.js):
-```javascript
-const { ai } = require('../../genkit-app/src/genkit');
-const { schemas, handlers } = require('./tools');
-
+// [Reference Example 3.1]: Tool: get_wallet_balance
 const getWalletBalanceTool = ai.defineTool(
   {
     name: 'get_wallet_balance',
     description: 'Retrieve current wallet balance, currency, account holder name, and account status for a given user ID.',
-    inputSchema: schemas.GetWalletBalanceInput,
-    outputSchema: z.any()
+    inputSchema: GetWalletBalanceInput,
   },
   async (input) => handlers.getWalletBalance(input)
 );
+```
 
+---
+
+#### Exercise 3.2: Tool `check_transfer_status`
+```javascript
+// TODO [Exercise 3.2]: Register check_transfer_status with ai.defineTool
+const checkTransferStatusTool = ai.defineTool(
+  {
+    name: 'check_transfer_status',
+    description: 'Inquire transfer status, parties, timestamp, and failure reason (if any) using transfer ID or reference ID.',
+    inputSchema: CheckTransferStatusInput,
+  },
+  async (input) => handlers.checkTransferStatus(input)
+);
+```
+
+---
+
+#### Exercise 3.3: Tool `check_topup_status`
+```javascript
+// TODO [Exercise 3.3]: Register check_topup_status with ai.defineTool
+const checkTopupStatusTool = ai.defineTool(
+  {
+    name: 'check_topup_status',
+    description: 'Inquire top-up status, payment method, virtual account or settlement information by topup ID or reference ID.',
+    inputSchema: CheckTopupStatusInput,
+  },
+  async (input) => handlers.checkTopupStatus(input)
+);
+```
+
+---
+
+#### Exercise 3.4: Tool `execute_transfer`
+```javascript
+// TODO [Exercise 3.4]: Register execute_transfer with ai.defineTool
 const executeTransferTool = ai.defineTool(
   {
     name: 'execute_transfer',
     description: 'Execute a wallet-to-wallet transfer from sender to recipient. Deducts sender balance and credits recipient balance.',
-    inputSchema: schemas.ExecuteTransferInput,
-    outputSchema: z.any()
+    inputSchema: ExecuteTransferInput,
   },
   async (input) => handlers.executeTransfer(input)
 );
@@ -388,10 +681,55 @@ const executeTransferTool = ai.defineTool(
 
 ---
 
+#### Exercise 3.5: Tool `initiate_topup`
+```javascript
+// TODO [Exercise 3.5]: Register initiate_topup with ai.defineTool
+const initiateTopupTool = ai.defineTool(
+  {
+    name: 'initiate_topup',
+    description: 'Initiate a wallet balance top-up for a user via VIRTUAL_ACCOUNT, CREDIT_CARD, or BANK_TRANSFER.',
+    inputSchema: InitiateTopupInput,
+  },
+  async (input) => handlers.initiateTopup(input)
+);
+```
+
+---
+
+#### Exercise 3.6: Tool `get_transaction_history`
+```javascript
+// TODO [Exercise 3.6]: Register get_transaction_history with ai.defineTool
+const getTransactionHistoryTool = ai.defineTool(
+  {
+    name: 'get_transaction_history',
+    description: 'Retrieve recent transaction history (inflows, outflows, and topups) for a wallet user account.',
+    inputSchema: GetTransactionHistoryInput,
+  },
+  async (input) => handlers.getTransactionHistory(input)
+);
+```
+
+---
+
+#### Verification: Inspect Tools in Genkit Web UI
+Launch the Developer Workbench:
+```bash
+npm run ui
+```
+Open **`http://localhost:4000`** in your browser. All 6 registered tools will appear under the **Tools** section. Test running `get_wallet_balance` with `{ "userId": "user_101" }`.
+
+---
+
 ### Exercise 4: AI Agent Orchestration Flow & Reasoning Engine
 * **Target File**: [`genkit-app/src/agent.js`](genkit-app/src/agent.js)
 
-#### Task 4.1: Define `walletAssistantFlow`
+Here we build the dual-engine orchestrator. If `GEMINI_API_KEY` is present, it uses Google Gemini cloud reasoning. If absent (the default), it falls back seamlessly to `simulateAgentReasoning` to work 100% offline with zero cost.
+
+---
+
+#### Exercise 4.1: Define `walletAssistantFlow`
+In [`genkit-app/src/agent.js`](genkit-app/src/agent.js), define the primary Genkit Flow:
+
 ```javascript
 const walletAssistantFlow = ai.defineFlow(
   {
@@ -408,6 +746,8 @@ const walletAssistantFlow = ai.defineFlow(
     })
   },
   async ({ query, userId }) => {
+    const hasApiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here');
+
     // Branch 1: If GEMINI_API_KEY is present -> Google Gemini Cloud LLM
     if (hasApiKey) {
       try {
@@ -453,28 +793,266 @@ User Query: ${query}`,
 );
 ```
 
-#### Task 4.2: Implement `simulateAgentReasoning`
-Build the 5 intent branches:
-* **Branch 1 (Transfer Status)**: Regex `/\b(TRF-\d+|REF-TRF-\d+)\b/i`.
-* **Branch 2 (Top-Up Status vs. Creation)**: Regex `/\b(TOP-\d+|REF-TOP-\d+)\b/i`.
-* **Branch 3 (Transaction History)**: Distinguishes `"latest transfer"` from general statements.
-* **Branch 4 (Fund Transfers with Safety Guard)**:
-  ```javascript
+---
+
+#### Exercise 4.2 [Reference Example]: Intent Branch 1 — Check Transfer Status
+In `simulateAgentReasoning(query, defaultUserId)`:
+```javascript
+  // [Reference Example 4.2 - Branch 1]: Transfer Status check
+  const trfMatch = q.match(/\b(TRF-\d+|REF-TRF-\d+)\b/i);
+  if ((lower.includes('transfer') && (lower.includes('status') || lower.includes('check'))) || trfMatch) {
+    const transferId = trfMatch ? trfMatch[1] : 'TRF-1002';
+    const result = await checkTransferStatusTool({ transferId });
+    let text = '';
+    if (result.success) {
+      text = `Here is the status for Transfer **${result.transferId}** (Ref: ${result.referenceId}):\n` +
+             `- **Status**: ${result.status === 'COMPLETED' ? '✅ COMPLETED' : result.status === 'PENDING' ? '⏳ PENDING' : '❌ FAILED'}\n` +
+             `- **Amount**: ${result.formattedAmount}\n` +
+             `- **Sender**: ${result.sender}\n` +
+             `- **Recipient**: ${result.recipient}\n` +
+             `- **Timestamp**: ${new Date(result.timestamp).toLocaleString()}\n` +
+             `- **Note**: ${result.description}`;
+      if (result.failureReason) {
+        text += `\n- **Failure Reason**: ${result.failureReason}`;
+      }
+    } else {
+      text = `❌ Could not find transfer with ID "${transferId}": ${result.error}`;
+    }
+    return {
+      toolCalled: 'check_transfer_status',
+      toolArgs: { transferId },
+      toolResult: result,
+      response: text
+    };
+  }
+```
+
+---
+
+#### Exercise 4.3: Intent Branch 2 — Check & Initiate Top-Up
+* **Task**: Handle both top-up status checks (e.g. `"status of top-up TOP-5001"`) and top-up initiation (e.g. `"top up $75 using virtual account"`).
+```javascript
+  // TODO [Exercise 4.3]: Top-up Status check & Initiate Top-up
+  const topupMatch = q.match(/\b(TOP-\d+|REF-TOP-\d+)\b/i);
+  if (lower.includes('topup') || lower.includes('top up') || lower.includes('top-up')) {
+    if (lower.includes('status') || lower.includes('what is happening') || topupMatch) {
+      const topupId = topupMatch ? topupMatch[1] : 'TOP-5002';
+      const result = await checkTopupStatusTool({ topupId });
+      let text = '';
+      if (result.success) {
+        text = `Here is the status for Top-up **${result.topupId}** (Ref: ${result.referenceId}):\n` +
+               `- **Status**: ${result.status === 'SUCCESS' ? '✅ SUCCESS' : result.status === 'PENDING' ? '⏳ PENDING' : '❌ FAILED'}\n` +
+               `- **Account Holder**: ${result.userName}\n` +
+               `- **Amount**: ${result.formattedAmount}\n` +
+               `- **Payment Method**: ${result.paymentMethod}\n` +
+               `- **Detail**: ${result.statusDetail}`;
+        if (result.virtualAccountNumber) {
+          text += `\n- **Virtual Account**: ${result.virtualAccountNumber} (${result.bank || 'Bank Partner'})`;
+        }
+      } else {
+        text = `❌ Could not find top-up with ID "${topupId}": ${result.error}`;
+      }
+      return {
+        toolCalled: 'check_topup_status',
+        toolArgs: { topupId },
+        toolResult: result,
+        response: text
+      };
+    }
+
+    // Initiate Top-up
+    const amountMatch = q.match(/\$?\s*(\d+(\.\d{1,2})?)/);
+    const amount = amountMatch ? parseFloat(amountMatch[1]) : 50.00;
+    let paymentMethod = 'VIRTUAL_ACCOUNT';
+    if (lower.includes('credit') || lower.includes('card')) paymentMethod = 'CREDIT_CARD';
+    if (lower.includes('bank transfer')) paymentMethod = 'BANK_TRANSFER';
+
+    const userMatch = q.match(/user_\d+/i);
+    const userId = userMatch ? userMatch[0] : defaultUserId;
+
+    const result = await initiateTopupTool({ userId, amount, paymentMethod });
+    let text = '';
+    if (result.success) {
+      text = `✅ Top-up request **${result.topupId}** created successfully for **${result.formattedAmount}**.\n` +
+             `- **Payment Method**: ${result.paymentMethod}\n` +
+             `- **Status**: ⏳ ${result.status}\n`;
+      const inst = result.paymentInstructions || result;
+      if (inst && inst.virtualAccountNumber) {
+        text += `- **Virtual Account Number**: \`${inst.virtualAccountNumber}\` (${inst.bank || 'Partner Bank'})\n` +
+                `- **Valid until**: ${inst.expiryTime ? new Date(inst.expiryTime).toLocaleString() : '24 hours'}`;
+      } else if (inst && inst.checkoutUrl) {
+        text += `- **Payment Link**: ${inst.checkoutUrl}`;
+      }
+    } else {
+      text = `❌ Failed to initiate top-up: ${result.error}`;
+    }
+    return {
+      toolCalled: 'initiate_topup',
+      toolArgs: { userId, amount, paymentMethod },
+      toolResult: result,
+      response: text
+    };
+  }
+```
+
+---
+
+#### Exercise 4.4: Intent Branch 3 — Inquire Transaction History & Statement
+* **Task**: Handle statement inquiries (e.g. `"show my history"`, `"what was my latest transfer?"`).
+```javascript
+  // TODO [Exercise 4.4]: Inquire History or Latest Transfer
+  const isHistoryOrLatest = lower.includes('history') ||
+                            lower.includes('transactions') ||
+                            lower.includes('statement') ||
+                            lower.includes('past') ||
+                            lower.includes('latest') ||
+                            lower.includes('last') ||
+                            lower.includes('recent');
+
+  if (isHistoryOrLatest && !lower.includes('send') && !lower.includes('pay to')) {
+    const userMatch = q.match(/user_\d+/i);
+    const userId = userMatch ? userMatch[0] : defaultUserId;
+    const result = await getTransactionHistoryTool({ userId, limit: 10 });
+
+    let text = '';
+    if (result.success) {
+      if (lower.includes('transfer')) {
+        const latestTransfer = result.transactions.find(
+          (tx) => tx.type === 'TRANSFER_OUT' || tx.type === 'TRANSFER_IN'
+        );
+        if (latestTransfer) {
+          text = `📋 **Your Latest Transfer (${latestTransfer.id})**:\n` +
+                 `- **Status**: ${latestTransfer.status === 'COMPLETED' ? '✅ COMPLETED' : latestTransfer.status === 'PENDING' ? '⏳ PENDING' : '❌ ' + latestTransfer.status}\n` +
+                 `- **Type**: ${latestTransfer.type === 'TRANSFER_OUT' ? 'Sent (Outflow)' : 'Received (Inflow)'}\n` +
+                 `- **Amount**: ${latestTransfer.formattedAmount}\n` +
+                 `- **Counterparty**: ${latestTransfer.counterparty}\n` +
+                 `- **Note**: ${latestTransfer.description}\n` +
+                 `- **Date**: ${new Date(latestTransfer.timestamp).toLocaleString()}`;
+        } else {
+          text = `No recent transfers found.`;
+        }
+      } else {
+        text = `📜 **Recent Transactions** (${Math.min(5, result.transactions.length)} entries):\n`;
+        result.transactions.slice(0, 5).forEach((tx, idx) => {
+          const symbol = tx.type === 'TRANSFER_OUT' ? '📤' : tx.type === 'TRANSFER_IN' ? '📥' : '💳';
+          text += `${idx + 1}. ${symbol} **${tx.id}** [${tx.status}] - **${tx.formattedAmount}**\n` +
+                  `   ${tx.description || tx.counterparty} • ${new Date(tx.timestamp).toLocaleDateString()}\n`;
+        });
+      }
+    } else {
+      text = `❌ Could not fetch transaction history: ${result.error}`;
+    }
+
+    return {
+      toolCalled: 'get_transaction_history',
+      toolArgs: { userId, limit: 10 },
+      toolResult: result,
+      response: text
+    };
+  }
+```
+
+---
+
+#### Exercise 4.5: Intent Branch 4 — Money Transfer Execution with Guardrail
+* **Task**: Handle fund transfer commands (e.g. `"Transfer $50 to Bob"`).
+* **Security Guardrail**: If the user omits the transfer amount (e.g. `"transfer to Bob"`), ask for confirmation and required amount instead of failing or blindly sending funds!
+```javascript
+  // TODO [Exercise 4.5]: Do Transfer with Safety Guardrail
   if (lower.includes('transfer') || lower.includes('send') || lower.includes('pay')) {
     const amountMatch = q.match(/\$?\s*(\d+(\.\d{1,2})?)/);
-    // 🛡️ Safety Guard: Prompt if amount is missing
+    const recipientMatch = q.match(/(?:to\s+)(user_\d+|bob|charlie|alice)/i);
+
+    // 🛡️ Safety Guardrail: Prompt if amount is missing
     if (!amountMatch) {
       return {
         toolCalled: 'none',
         toolArgs: {},
         toolResult: null,
-        response: `❓ How much would you like to transfer, and to whom? Please specify the amount and recipient (e.g., *"Transfer $50 to Bob"*).`
+        response: `❓ How much would you like to transfer, and to whom? Please specify the amount and recipient (e.g., *"Transfer $50 to Bob"* or *"Send $30 to user_102"*).`
       };
     }
-    // Execute transfer...
+
+    const amount = parseFloat(amountMatch[1]);
+    let recipientId = 'user_102'; // default Bob if specified
+    if (recipientMatch) {
+      const nameOrId = recipientMatch[1].toLowerCase();
+      if (nameOrId === 'bob' || nameOrId === 'user_102') recipientId = 'user_102';
+      else if (nameOrId === 'charlie' || nameOrId === 'user_103') recipientId = 'user_103';
+      else if (nameOrId === 'alice' || nameOrId === 'user_101') recipientId = 'user_101';
+      else recipientId = nameOrId;
+    }
+
+    const senderMatch = q.match(/(?:from\s+)(user_\d+)/i);
+    const senderId = senderMatch ? senderMatch[1] : defaultUserId;
+
+    const result = await executeTransferTool({
+      senderId,
+      recipientId,
+      amount,
+      description: `Transfer initiated via Genkit Assistant: "${q}"`
+    });
+
+    let text = '';
+    if (result.success) {
+      text = `🎉 **Transfer Successful!**\n` +
+             `- **Transaction ID**: ${result.transferId}\n` +
+             `- **Amount Sent**: ${result.formattedAmount}\n` +
+             `- **From**: ${result.senderName}\n` +
+             `- **To**: ${result.recipientName}\n` +
+             `- **Your Remaining Balance**: **${result.formattedRemainingBalance}**\n` +
+             `- **Timestamp**: ${new Date(result.timestamp).toLocaleString()}`;
+    } else {
+      text = `❌ **Transfer Failed**: ${result.error}`;
+    }
+
+    return {
+      toolCalled: 'execute_transfer',
+      toolArgs: { senderId, recipientId, amount },
+      toolResult: result,
+      response: text
+    };
   }
-  ```
-* **Branch 5 (Balance Inquiry)**: Fallback querying `getWalletBalanceTool`.
+```
+
+---
+
+#### Exercise 4.6 [Reference Example]: Intent Branch 5 — Balance Inquiry Fallback
+```javascript
+  // [Reference Example 4.6 - Branch 5]: Balance Inquiry default fallback
+  const userMatch = q.match(/user_\d+/i);
+  const userId = userMatch ? userMatch[0] : defaultUserId;
+  const result = await getWalletBalanceTool({ userId });
+
+  let text = '';
+  if (result.success) {
+    text = `💼 **Wallet Summary for ${result.accountHolder}**:\n` +
+           `- **Current Balance**: **${result.formattedBalance}**\n` +
+           `- **Account Status**: ${result.status === 'ACTIVE' ? '🟢 ACTIVE' : '🔴 ' + result.status}\n` +
+           `- **Tier**: ${result.tier}\n` +
+           `- **Daily Transfer Limit**: $${result.dailyLimit.toFixed(2)}`;
+  } else {
+    text = `❌ Could not find wallet for user "${userId}": ${result.error}`;
+  }
+
+  return {
+    toolCalled: 'get_wallet_balance',
+    toolArgs: { userId },
+    toolResult: result,
+    response: text
+  };
+```
+
+---
+
+#### Verification: Test with Interactive Chat & Automated E2E
+```bash
+# 1. Interactive terminal chat:
+npm run chat
+
+# 2. Automated regression validation of all 7 payment scenarios:
+npm run e2e
+```
 
 ---
 
