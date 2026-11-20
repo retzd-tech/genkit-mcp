@@ -1,5 +1,8 @@
 # Beginner's Guide: Getting Started with Firebase Genkit & MCP
 
+> 🌐 **GitHub Repository**: [https://github.com/retzd-tech/genkit-mcp](https://github.com/retzd-tech/genkit-mcp)  
+> 💡 **Unified Master Manual**: Looking for the full hands-on workshop with code exercises and feature walkthroughs in one place? See **[HANDS_ON_WORKSHOP.md](HANDS_ON_WORKSHOP.md)**.
+
 Welcome! If you are new to **Firebase Genkit** or the **Model Context Protocol (MCP)**, this step-by-step guide is designed specifically for you.
 
 By the end of this guide, you will understand:

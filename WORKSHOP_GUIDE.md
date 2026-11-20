@@ -1,5 +1,8 @@
 # Hands-on Workshop: Building an AI-Powered Digital Wallet with Firebase Genkit & MCP
 
+> 🌐 **GitHub Repository**: [https://github.com/retzd-tech/genkit-mcp](https://github.com/retzd-tech/genkit-mcp)  
+> 💡 **Unified Master Manual**: For the consolidated single-file guide combining these exercises with the beginner onboarding tour and testing scenarios, see **[HANDS_ON_WORKSHOP.md](HANDS_ON_WORKSHOP.md)**.
+
 Welcome to the **Firebase Genkit + Model Context Protocol (MCP)** developer workshop!
 
 In this hands-on workshop, you will learn how to take an existing Node.js Core Banking REST API and transform it into an autonomous, AI-driven financial assistant using **Model Context Protocol (MCP)** and **Firebase Genkit**.

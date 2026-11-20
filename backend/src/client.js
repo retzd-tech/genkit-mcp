@@ -55,6 +55,11 @@ class WalletApiClient {
     return db.executeTransfer({ senderId, recipientId, amount, description });
   }
 
+  // Alias for compatibility
+  async transferFunds(args) {
+    return this.executeTransfer(args);
+  }
+
   // 3. Check Transfer Status
   async getTransferStatus(transferId) {
     const res = await this._request(`/api/transfers/${encodeURIComponent(transferId)}`);
@@ -96,6 +101,11 @@ class WalletApiClient {
 
     // Fallback
     return db.getTransactionHistory(userId, limit);
+  }
+
+  // Alias for compatibility
+  async getTransactions(userId, limit) {
+    return this.getTransactionHistory(userId, limit);
   }
 
   // 7. Complete Top-up (Simulation helper)
