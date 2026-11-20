@@ -5,6 +5,7 @@
 A production-ready reference demonstration illustrating how **Firebase Genkit** and the **Model Context Protocol (MCP)** interface with an **independent backend system** (e.g., Core Banking / Digital Wallet REST API).
 
 > 💡 **Guides for Developers**:
+> * **[Frequently Asked Questions (FAQ.md)](FAQ.md)**: ❓ **Detailed answers & code examples** covering MCP origins, tool registration, model swapping, recipient ID resolution, and Genkit MCP consumption.
 > * **[Unified Hands-On Workshop & Developer Guide (HANDS_ON_WORKSHOP.md)](HANDS_ON_WORKSHOP.md)**: ⭐ **The master comprehensive guide** combining hands-on code exercises (building from scratch on `workshop-starter`) with the full operational feature tour, demo accounts, and testing scenarios.
 > * **[Concepts & Architecture Guide (CONCEPTS_AND_ARCHITECTURE.md)](CONCEPTS_AND_ARCHITECTURE.md)**: Deep dive into the "Two-API" architecture, difference between Flows and Tools, and how Genkit and MCP relate.
 > * **[Dual-Engine AI Architecture Guide (AI_ENGINES_GUIDE.md)](AI_ENGINES_GUIDE.md)**: In-depth technical breakdown of the Local Offline Reasoning Engine vs. Cloud LLM (Gemini) and how to configure/switch between modes.
