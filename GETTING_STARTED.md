@@ -24,10 +24,11 @@ npm -v
 
 *(If you don't have Node.js installed, download the LTS version from [nodejs.org](https://nodejs.org/)).*
 
-### Step 1.2: Check Project Directory
-Ensure you are in the root directory of this project:
+### Step 1.2: Clone Repository & Check Directory
+Clone from GitHub and enter the root directory of this project:
 ```bash
-cd /Users/surahutomo/Documents/Workshop/genkit-mcp
+git clone https://github.com/retzd-tech/genkit-mcp.git
+cd genkit-mcp
 ```
 
 ### Step 1.3: (Optional) Google Gemini API Key

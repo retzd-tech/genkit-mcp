@@ -1,5 +1,7 @@
 # Firebase Genkit + MCP Digital Wallet System
 
+> 🌐 **GitHub Repository**: [https://github.com/retzd-tech/genkit-mcp](https://github.com/retzd-tech/genkit-mcp)
+
 A production-ready reference demonstration illustrating how **Firebase Genkit** and the **Model Context Protocol (MCP)** interface with an **independent backend system** (e.g., Core Banking / Digital Wallet REST API).
 
 > 💡 **Guides for Developers**:
