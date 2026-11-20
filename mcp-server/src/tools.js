@@ -148,7 +148,9 @@ const handlers = {
       return { success: false, error: 'senderId, recipientId, and positive amount are required' };
     }
     try {
-      const transfer = await apiClient.transferFunds({ senderId, recipientId, amount, description });
+      const res = await apiClient.executeTransfer({ senderId, recipientId, amount, description });
+      const transfer = res.transfer || res;
+      const remainingBalance = res.remainingBalance !== undefined ? res.remainingBalance : transfer.remainingBalance;
       return {
         success: true,
         transferId: transfer.transferId,
@@ -160,8 +162,8 @@ const handlers = {
         amount: transfer.amount,
         currency: transfer.currency,
         formattedAmount: `$${transfer.amount.toFixed(2)} ${transfer.currency}`,
-        remainingBalance: transfer.remainingBalance,
-        formattedRemainingBalance: `$${transfer.remainingBalance.toFixed(2)} ${transfer.currency}`,
+        remainingBalance: remainingBalance,
+        formattedRemainingBalance: remainingBalance !== undefined ? `$${remainingBalance.toFixed(2)} ${transfer.currency}` : undefined,
         timestamp: transfer.timestamp
       };
     } catch (err) {
@@ -177,6 +179,15 @@ const handlers = {
     }
     try {
       const topup = await apiClient.initiateTopup({ userId, amount, paymentMethod });
+      const instructions = topup.paymentInstructions || {
+        virtualAccountNumber: topup.virtualAccountNumber,
+        bank: topup.bank,
+        expiryTime: topup.expiryTime,
+        checkoutUrl: topup.checkoutUrl,
+        bankName: topup.bankName,
+        bankAccountNumber: topup.bankAccountNumber,
+        accountName: topup.accountName
+      };
       return {
         success: true,
         topupId: topup.topupId,
@@ -187,7 +198,11 @@ const handlers = {
         formattedAmount: `$${topup.amount.toFixed(2)} ${topup.currency}`,
         paymentMethod: topup.paymentMethod,
         status: topup.status,
-        paymentInstructions: topup.paymentInstructions,
+        paymentInstructions: instructions,
+        virtualAccountNumber: topup.virtualAccountNumber || instructions.virtualAccountNumber || null,
+        bank: topup.bank || instructions.bank || null,
+        expiryTime: topup.expiryTime || instructions.expiryTime || null,
+        checkoutUrl: topup.checkoutUrl || instructions.checkoutUrl || null,
         timestamp: topup.timestamp
       };
     } catch (err) {

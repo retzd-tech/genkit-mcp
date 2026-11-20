@@ -107,11 +107,12 @@ async function simulateAgentReasoning(query, defaultUserId = 'user_101') {
       text = `✅ Top-up request **${result.topupId}** created successfully for **${result.formattedAmount}**.\n` +
              `- **Payment Method**: ${result.paymentMethod}\n` +
              `- **Status**: ⏳ ${result.status}\n`;
-      if (result.paymentInstructions.virtualAccountNumber) {
-        text += `- **Virtual Account Number**: \`${result.paymentInstructions.virtualAccountNumber}\` (${result.paymentInstructions.bank})\n` +
-                `- **Valid until**: ${new Date(result.paymentInstructions.expiryTime).toLocaleString()}`;
-      } else if (result.paymentInstructions.checkoutUrl) {
-        text += `- **Payment Link**: ${result.paymentInstructions.checkoutUrl}`;
+      const inst = result.paymentInstructions || result;
+      if (inst && inst.virtualAccountNumber) {
+        text += `- **Virtual Account Number**: \`${inst.virtualAccountNumber}\` (${inst.bank || 'Partner Bank'})\n` +
+                `- **Valid until**: ${inst.expiryTime ? new Date(inst.expiryTime).toLocaleString() : '24 hours'}`;
+      } else if (inst && inst.checkoutUrl) {
+        text += `- **Payment Link**: ${inst.checkoutUrl}`;
       }
     } else {
       text = `❌ Failed to initiate top-up: ${result.error}`;
