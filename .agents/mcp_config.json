@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "devfest-wallet": {
+      "command": "node",
+      "args": ["mcp-server/src/std-mcp-server.js"],
+      "env": {
+        "BACKEND_API_URL": "http://localhost:3001"
+      }
+    }
+  }
+}
