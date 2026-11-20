@@ -612,6 +612,24 @@ npm run mcp:std
 
 ---
 
+#### Visual Debugging: Inspecting Tools with the Official MCP Inspector
+
+Anthropic provides an official browser-based GUI debugger called the **MCP Inspector** (`@modelcontextprotocol/inspector`). It allows developers to test MCP tools, inspect parameter schemas, and view raw JSON-RPC traffic over `stdio` without needing an AI agent or IDE:
+
+```bash
+npm run inspect
+# or: npm run mcp:inspect
+```
+
+1. This automatically runs `npx @modelcontextprotocol/inspector node mcp-server/src/std-mcp-server.js`.
+2. It launches an interactive web interface (typically at **`http://localhost:5173`**).
+3. **What you can explore in the MCP Inspector**:
+   * **Tools Tab**: View all 6 registered banking tools (`get_wallet_balance`, `execute_transfer`, etc.) along with their auto-generated JSON schemas.
+   * **Interactive Execution**: Select a tool (e.g., `get_wallet_balance`), enter `{ "userId": "user_101" }`, and click **Run Tool** to see the live JSON response.
+   * **Raw Protocol Log**: Watch the underlying JSON-RPC 2.0 messages (`tools/list`, `tools/call`) passing through the `stdio` pipe.
+
+---
+
 #### Connecting & Testing with Google Antigravity via `.agents/`
 
 **Google Antigravity** has native support for the Model Context Protocol (MCP). It automatically discovers project-level MCP servers by reading the `.agents/mcp_config.json` configuration file at your workspace root.
@@ -789,6 +807,27 @@ Launch the Developer Workbench:
 npm run ui
 ```
 Open **`http://localhost:4000`** in your browser. All 6 registered tools will appear under the **Tools** section. Test running `get_wallet_balance` with `{ "userId": "user_101" }`.
+
+---
+
+#### Deep-Dive Comparison: MCP Inspector vs. Firebase Genkit Developer UI
+
+Notice that **both** developer tools provide interactive web interfaces that display your tools and let you test them with form inputs. How do they compare, and when should you use each?
+
+| Feature / Dimension | Official MCP Inspector (`npm run inspect`) | Firebase Genkit Developer UI (`npm run ui`) |
+| :--- | :--- | :--- |
+| **Architectural Layer** | **Protocol Level** (Standard MCP over `stdio`/SSE) | **Application & Agent Level** (Genkit Framework) |
+| **Primary Focus** | Tool standardization & JSON-RPC protocol validation | Full AI application workflows, prompt engineering, & agent execution |
+| **Tools Inspection** | ✅ Discovers tools via MCP JSON-RPC (`tools/list`) | ✅ Discovers tools via Genkit registry (`ai.defineTool`) |
+| **Flows & Agents** | ❌ None (only knows raw tools, resources, prompts) | ✅ Full support for **Flows** (`walletAssistantFlow`, `transferFundsFlow`) |
+| **Observability & Tracing**| ❌ Shows raw JSON-RPC protocol messages | ✅ **Full execution traces** (latency waterfalls, step-by-step spans, tokens) |
+| **Multi-Turn Chat Testing**| ❌ No conversational testing | ✅ Interactive prompt/flow runner with parameter forms |
+| **Model Testing** | ❌ Model-agnostic (does not invoke LLMs directly) | ✅ Live testing across Gemini, Claude, OpenAI, or Ollama |
+| **Target Client Ecosystem**| Tests compatibility for **Antigravity, Claude Desktop, Cursor** | Tests **internal Genkit application logic** |
+
+> 💡 **Developer Takeaway**:
+> * Use **`npm run inspect`** when authoring or debugging the **standard MCP server** to verify that your tool names, Zod schemas, and JSON-RPC outputs meet the universal MCP specification for external clients.
+> * Use **`npm run ui`** when developing **Genkit agents, multi-turn flows, and prompts** to inspect end-to-end execution spans, latency, and model outputs.
 
 ---
 
