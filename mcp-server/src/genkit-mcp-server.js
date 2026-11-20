@@ -10,7 +10,11 @@ const {
   handlers
 } = require('./tools');
 
-// 1. Tool: get_wallet_balance
+// ============================================================================
+// WORKSHOP EXERCISE 3: Firebase Genkit Tool Registration (ai.defineTool)
+// ============================================================================
+
+// [Reference Example 3.1]: Tool: get_wallet_balance
 const getWalletBalanceTool = ai.defineTool(
   {
     name: 'get_wallet_balance',
@@ -20,7 +24,7 @@ const getWalletBalanceTool = ai.defineTool(
   async (input) => handlers.getWalletBalance(input)
 );
 
-// 2. Tool: check_transfer_status
+// TODO [Exercise 3.2]: Tool: check_transfer_status
 const checkTransferStatusTool = ai.defineTool(
   {
     name: 'check_transfer_status',
@@ -30,7 +34,7 @@ const checkTransferStatusTool = ai.defineTool(
   async (input) => handlers.checkTransferStatus(input)
 );
 
-// 3. Tool: check_topup_status
+// TODO [Exercise 3.3]: Tool: check_topup_status
 const checkTopupStatusTool = ai.defineTool(
   {
     name: 'check_topup_status',
@@ -40,7 +44,7 @@ const checkTopupStatusTool = ai.defineTool(
   async (input) => handlers.checkTopupStatus(input)
 );
 
-// 4. Tool: execute_transfer
+// TODO [Exercise 3.4]: Tool: execute_transfer
 const executeTransferTool = ai.defineTool(
   {
     name: 'execute_transfer',
@@ -50,7 +54,7 @@ const executeTransferTool = ai.defineTool(
   async (input) => handlers.executeTransfer(input)
 );
 
-// 5. Tool: initiate_topup
+// TODO [Exercise 3.5]: Tool: initiate_topup
 const initiateTopupTool = ai.defineTool(
   {
     name: 'initiate_topup',
@@ -60,7 +64,7 @@ const initiateTopupTool = ai.defineTool(
   async (input) => handlers.initiateTopup(input)
 );
 
-// 6. Tool: get_transaction_history
+// TODO [Exercise 3.6]: Tool: get_transaction_history
 const getTransactionHistoryTool = ai.defineTool(
   {
     name: 'get_transaction_history',
