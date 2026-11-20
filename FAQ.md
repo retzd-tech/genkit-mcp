@@ -11,6 +11,7 @@
 3. [Can we use different AI models in Genkit?](#3-can-we-use-different-ai-models-in-genkit)
 4. [When transferring money to another user, how does it know the recipient ID?](#4-when-transferring-money-to-another-user-how-does-it-know-the-recipient-id)
 5. [How do you call MCP through Genkit? (With Code Examples)](#5-how-do-you-call-mcp-through-genkit-with-code-examples)
+6. [How do you inspect MCP tools? What is the difference between the MCP Inspector and the Genkit Web UI?](#6-how-do-you-inspect-mcp-tools-what-is-the-difference-between-the-mcp-inspector-and-the-genkit-web-ui)
 
 ---
 
@@ -337,6 +338,60 @@ const walletAssistantFlow = ai.defineFlow(
   }
 );
 ```
+
+---
+
+## 6. How do you inspect MCP tools? What is the difference between the MCP Inspector and the Genkit Web UI?
+
+Both tools provide interactive web browser UIs to test tools and inspect parameters, but they operate at **different layers of the software architecture**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Application / Agent Layer                                │
+│    Firebase Genkit Developer UI (http://localhost:4000)     │
+│    Command: npm run ui                                      │
+│    • Inspects Genkit Flows (walletAssistantFlow)            │
+│    • Full execution traces, step latencies, & token counts  │
+│    • Live prompt engineering and model evaluation           │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ (Calls Tools)
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. Tool Protocol Layer                                      │
+│    Official Anthropic MCP Inspector (http://localhost:5173) │
+│    Command: npm run inspect                                 │
+│    • Discovers tools via MCP JSON-RPC protocol over stdio   │
+│    • Inspects raw Zod/JSON schemas                          │
+│    • Validates compatibility for Antigravity, Claude, Cursor│
+└──────────────────────────────┬──────────────────────────────┘
+                               │ (HTTP REST)
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 3. Core Banking REST API (http://localhost:3001)            │
+│    Command: npm run backend                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Feature Comparison Matrix:
+
+| Feature | Official MCP Inspector (`npm run inspect`) | Firebase Genkit Developer UI (`npm run ui`) |
+| :--- | :--- | :--- |
+| **Command** | `npm run inspect` *(or `npm run mcp:inspect`)* | `npm run ui` |
+| **Port / URL** | `http://localhost:5173` | `http://localhost:4000` |
+| **Architectural Layer**| **Protocol Level** (Anthropic MCP standard) | **Application / Agent Level** (Firebase Genkit) |
+| **Tool Inspection** | Discovers tools via MCP JSON-RPC (`tools/list`) | Discovers tools registered in Genkit (`ai.defineTool`) |
+| **Agent Flows** | ❌ None (MCP only knows raw tools and resources) | ✅ Full support for **Flows** (`walletAssistantFlow`) |
+| **Execution Tracing** | ❌ Shows raw JSON-RPC text messages | ✅ **Trace waterfalls** with step latency & tokens |
+| **Model Testing** | ❌ Model-agnostic (does not invoke LLMs) | ✅ Live testing across Gemini, Claude, OpenAI, Ollama |
+| **Best Used For** | Verifying MCP server compliance for **Antigravity, Claude Desktop, and Cursor** | Building AI workflows, multi-turn prompts, and application business logic |
+
+### How to use the MCP Inspector:
+```bash
+npm run inspect
+```
+1. Spawns `npx @modelcontextprotocol/inspector node mcp-server/src/std-mcp-server.js`.
+2. Open `http://localhost:5173` in your browser.
+3. Select `devfest-wallet` $\rightarrow$ Click any tool $\rightarrow$ Fill arguments $\rightarrow$ Click **Run Tool**.
 
 ---
 

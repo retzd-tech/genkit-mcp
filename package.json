@@ -12,6 +12,8 @@
     "all": "node scripts/run-all.js",
     "mcp:genkit": "node mcp-server/src/genkit-mcp-server.js",
     "mcp:std": "node mcp-server/src/std-mcp-server.js",
+    "mcp:inspect": "npx @modelcontextprotocol/inspector node mcp-server/src/std-mcp-server.js",
+    "inspect": "npx @modelcontextprotocol/inspector node mcp-server/src/std-mcp-server.js",
     "chat": "node genkit-app/src/cli.js",
     "ui": "genkit start -- node --watch genkit-app/src/dev.js",
     "reset-db": "node backend/src/reset.js",

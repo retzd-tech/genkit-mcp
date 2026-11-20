@@ -289,6 +289,14 @@ Google Antigravity automatically discovers project MCP servers via the `.agents/
    * *"Why did transfer TRF-1003 fail?"* $\rightarrow$ invokes `check_transfer_status` and explains account freeze.
    * *"Show me recent transactions for user_101"* $\rightarrow$ invokes `get_transaction_history`.
 
+### Task 2.4: Visual Tool Inspection with the Official MCP Inspector
+To inspect all tools and test raw JSON-RPC execution in your browser:
+```bash
+npm run inspect
+# or: npm run mcp:inspect
+```
+Opens **`http://localhost:5173`** where you can view registered tools, test parameters, and monitor JSON-RPC traffic.
+
 ---
 
 ## Part 4: Exercise 3 — Registering Genkit Tools & Using the Web UI (25 mins)
@@ -354,6 +362,15 @@ npm run ui
 2. In the left navigation, click **Tools (6)**.
 3. Select **`execute_transfer`** and notice that Genkit auto-generates input form fields from your Zod schema!
 4. Click **Run** to execute a test transfer.
+
+### Task 3.4: Understanding the Difference: MCP Inspector vs. Genkit Web UI
+
+| Dimension | MCP Inspector (`npm run inspect`) | Genkit Developer UI (`npm run ui`) |
+| :--- | :--- | :--- |
+| **Layer** | Protocol level (Anthropic MCP standard) | Application / Agent level (Firebase Genkit) |
+| **What it Inspects** | Raw MCP tools, parameters, & JSON-RPC traffic | Genkit Tools, **Flows**, prompts, & execution traces |
+| **Telemetry & Observability** | None (protocol messages only) | Full span waterfalls, latency timings, and token counters |
+| **Best Used For** | Debugging MCP server compatibility for external clients (Antigravity, Claude, Cursor) | Developing AI orchestration flows, multi-turn reasoning, and prompt engineering |
 
 ---
 
