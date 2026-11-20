@@ -612,6 +612,78 @@ npm run mcp:std
 
 ---
 
+#### Connecting & Testing with Google Antigravity via `.agents/`
+
+**Google Antigravity** has native support for the Model Context Protocol (MCP). It automatically discovers project-level MCP servers by reading the `.agents/mcp_config.json` configuration file at your workspace root.
+
+##### Step 1: Inspect or Create `.agents/mcp_config.json`
+Verify that [`.agents/mcp_config.json`](.agents/mcp_config.json) exists in your project root:
+```json
+{
+  "mcpServers": {
+    "devfest-wallet": {
+      "command": "node",
+      "args": ["mcp-server/src/std-mcp-server.js"],
+      "env": {
+        "BACKEND_API_URL": "http://localhost:3001"
+      }
+    }
+  }
+}
+```
+
+> 💡 **How it works**:
+> * `command`: The executable that Antigravity spawns (`node`).
+> * `args`: Points to the standard MCP server script that speaks JSON-RPC over `stdio`.
+> * `env.BACKEND_API_URL`: Directs the MCP tools to your running Core Banking REST API.
+
+##### Step 2: Start the Core Banking API
+Since MCP tools make HTTP requests to the banking layer, ensure your backend server is running in a terminal:
+```bash
+npm run backend
+```
+*(Listens on `http://localhost:3001`)*
+
+##### Step 3: Open Antigravity Chat & Verify Discovery
+1. Open Google Antigravity in this project directory.
+2. Antigravity automatically detects `.agents/mcp_config.json` upon initialization.
+3. It queries the server and registers all 6 banking tools:
+   * ⚡ `get_wallet_balance`
+   * ⚡ `check_transfer_status`
+   * ⚡ `check_topup_status`
+   * ⚡ `execute_transfer`
+   * ⚡ `initiate_topup`
+   * ⚡ `get_transaction_history`
+
+##### Step 4: Test Real Prompts in Antigravity Chat
+You can now instruct Antigravity using plain conversational language:
+
+* **Prompt 1: Balance & Account Status Inquiry**
+  > *"Check the current wallet balance and account status for Alice (user_101)"*  
+  👉 **What happens**: Antigravity automatically selects and invokes `get_wallet_balance` with `{ userId: 'user_101' }`, reading live ledger data ($1250.00 USD, ACTIVE, PREMIUM).
+
+* **Prompt 2: Check Existing Transfer Status**
+  > *"Can you check the status of transfer TRF-1001?"*  
+  👉 **What happens**: Antigravity calls `check_transfer_status` with `{ transferId: 'TRF-1001' }` and reports that the transfer is `COMPLETED` for $100.00 to Bob Jones.
+
+* **Prompt 3: Execute Live Money Transfer**
+  > *"Transfer $20 from user_101 to Bob Jones with description 'Coffee and donuts'"*  
+  👉 **What happens**: Antigravity calls `execute_transfer`, debits Alice's account to `$1230.00`, credits Bob to `$340.50`, persists the transaction to `wallet-db.json`, and returns the newly generated `TRF-XXXX` receipt!
+
+* **Prompt 4: Top-Up Virtual Account Check**
+  > *"What is the status of top-up TOP-5001?"*  
+  👉 **What happens**: Antigravity calls `check_topup_status` and returns the Chase Bank Virtual Account number (`88019283746`).
+
+* **Prompt 5: Compliance Failure Reason Inquiry**
+  > *"Why did transfer TRF-1003 fail? Please inspect its status."*  
+  👉 **What happens**: Antigravity executes `check_transfer_status` and clearly explains that the recipient account (Charlie Brown) is `FROZEN by compliance`.
+
+* **Prompt 6: Transaction History Summary**
+  > *"Show me recent transactions for user_101"*  
+  👉 **What happens**: Antigravity invokes `get_transaction_history` and summarizes all inflows, outflows, and top-ups with timestamps and amounts.
+
+---
+
 ### Exercise 3: Genkit Tool Registration & Developer UI
 * **Target Files**:
   * [`genkit-app/src/genkit.js`](genkit-app/src/genkit.js)

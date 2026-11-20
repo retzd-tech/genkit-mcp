@@ -30,7 +30,24 @@ In this workshop, we demonstrate **both approaches** to give you complete enterp
 | Implementation File | Package Used | Purpose |
 | :--- | :--- | :--- |
 | [`mcp-server/src/genkit-mcp-server.js`](mcp-server/src/genkit-mcp-server.js) | `@genkit-ai/mcp` | Uses `createMcpServer(ai, { ... })` to directly package your Genkit tools into an MCP server over `stdio`. |
-| [`mcp-server/src/std-mcp-server.js`](mcp-server/src/std-mcp-server.js) | `@modelcontextprotocol/sdk` | Uses the standard reference SDK (`McpServer`, `StdioServerTransport`) so any external tool (Claude Desktop, Cursor) can consume your banking tools. |
+| [`mcp-server/src/std-mcp-server.js`](mcp-server/src/std-mcp-server.js) | `@modelcontextprotocol/sdk` | Uses the standard reference SDK (`McpServer`, `StdioServerTransport`) so any external tool (**Google Antigravity**, **Claude Desktop**, **Cursor**) can consume your banking tools. |
+
+### How does Google Antigravity connect to this MCP server?
+Google Antigravity automatically discovers workspace customizations by reading [`.agents/mcp_config.json`](.agents/mcp_config.json) at the root of your project:
+```json
+{
+  "mcpServers": {
+    "devfest-wallet": {
+      "command": "node",
+      "args": ["mcp-server/src/std-mcp-server.js"],
+      "env": {
+        "BACKEND_API_URL": "http://localhost:3001"
+      }
+    }
+  }
+}
+```
+When your Core Banking API is running (`npm run backend`), Antigravity automatically registers the 6 tools and allows you to test them directly in chat (e.g. *"Check balance for Alice"* or *"Transfer $20 to Bob"*).
 
 ---
 
