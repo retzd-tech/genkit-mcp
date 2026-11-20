@@ -10,8 +10,14 @@ const { db } = require('./db');
 const app = express();
 app.use(express.json());
 
-// Serve static assets for Devfest Wallet Mobile Web UI
-app.use(express.static(path.join(__dirname, '../../public')));
+// CORS Support for independent frontend or external MCP clients
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  next();
+});
 
 // Silence common browser & devtools probes (clean middleware, Express 5 compatible)
 app.use((req, res, next) => {
@@ -159,23 +165,7 @@ app.post('/api/topups/:topupId/complete', (req, res) => {
   }
 });
 
-// Chatbot endpoint: connects Web UI to Firebase Genkit Assistant Flow
-app.post('/api/chat', async (req, res) => {
-  const { query, userId = 'user_101' } = req.body;
-  if (!query) {
-    return res.status(400).json({ success: false, error: 'Query is required' });
-  }
-  try {
-    const { walletAssistantFlow } = require('../../genkit-app/src/agent');
-    const result = await walletAssistantFlow({ query, userId });
-    res.json({ success: true, data: result });
-  } catch (err) {
-    console.error('[API Chat Error]', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Database reset endpoint for Devfest Wallet Web UI
+// Database reset endpoint for Core Banking database
 app.post('/api/reset', (req, res) => {
   try {
     const success = db.resetData();
@@ -194,7 +184,7 @@ const PORT = process.env.PORT || 3001;
 function startServer(port = PORT) {
   return new Promise((resolve) => {
     const server = app.listen(port, () => {
-      console.log(`[Devfest Wallet] Mobile Web App & Backend API running on http://localhost:${port}`);
+      console.log(`[Core Banking API] REST API running on http://localhost:${port}`);
       resolve(server);
     });
     server.on('error', (err) => {

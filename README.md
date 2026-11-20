@@ -61,48 +61,59 @@ In an enterprise or large-scale production setup, you almost never build the dat
 
 ```
 genkit-mcp/
-├── backend/                  # Layer 1: Core Banking REST API (Independent Service)
+├── backend/                  # Layer 1: Core Banking REST API (Port 3001)
 │   ├── data/
 │   │   ├── wallet-db.json    # Live persistent storage (wallets, transfers, topups)
 │   │   └── seed.json         # Clean seed state for instant database reset
 │   └── src/
 │       ├── db.js             # Banking business logic (balance checks, debit/credit)
-│       ├── server.js         # Express REST API server (port 3001)
+│       ├── server.js         # Pure REST API server without UI or agent code (port 3001)
 │       ├── client.js         # API client SDK that MCP tools use to call the backend
 │       └── reset.js          # CLI script to restore database back to seed state
 │
-├── mcp-server/               # Layer 2: Model Context Protocol (MCP) Standardization
+├── frontend/                 # Layer 2: Devfest Wallet Mobile Web UI (Port 3000)
+│   └── server.js             # Dedicated frontend server serving public/ and proxying APIs
+│
+├── mcp-server/               # Layer 3: Model Context Protocol (MCP) Standardization
 │   └── src/
 │       ├── tools.js          # Tool input schemas (Zod) and execution handlers
 │       ├── genkit-mcp-server.js  # MCP Server using @genkit-ai/mcp (createMcpServer)
 │       └── std-mcp-server.js     # Standard MCP SDK Server (StdioServerTransport)
 │
-├── genkit-app/               # Layer 3: Firebase Genkit AI Agent & Flows
+├── genkit-app/               # Layer 4: Firebase Genkit AI Agent & Microservice (Port 3002)
 │   └── src/
+│       ├── server.js         # Dedicated HTTP microservice for AI chat (/api/chat)
 │       ├── genkit.js         # Single unified Genkit instance shared across the project
 │       ├── agent.js          # AI Assistant Flow & dedicated single-purpose flows
 │       ├── dev.js            # Entrypoint for Genkit Developer UI
 │       └── cli.js            # Interactive terminal chat UI
 │
+├── public/                   # Frontend assets (HTML, CSS, JS)
+├── scripts/
+│   └── run-all.js            # Concurrently runs all 3 independent services
 ├── e2e.js                    # Automated end-to-end test walkthrough of all 7 payment scenarios
 ├── package.json              # Project scripts and dependencies
-├── .env.example              # Configuration template (ports, backend URL, Gemini API key)
+├── .env.example              # Configuration template (ports, service URLs, Gemini API key)
 └── README.md                 # Complete documentation
 ```
 
 ### Detailed Folder Responsibilities:
 
-#### `backend/` (The Core System)
-This represents your **existing backend service**. It knows nothing about AI, LLMs, or Genkit. It only provides standard REST endpoints and enforces banking business logic (e.g., sender cannot transfer money if balance is insufficient, accounts cannot transfer to frozen accounts).
+#### `backend/` (The Core System - Port 3001)
+This represents your **existing backend service**. It is completely independent: it knows nothing about AI, LLMs, or Genkit, and does not serve frontend HTML/JS. It only provides standard REST endpoints and enforces banking business logic (e.g., sender cannot transfer money if balance is insufficient, accounts cannot transfer to frozen accounts). Run with: `npm run backend`.
+
+#### `frontend/` (The User Interface - Port 3000)
+The dedicated web server that serves the **Devfest Wallet Mobile Web App** on `http://localhost:3000`. It acts as the user-facing entrypoint, seamlessly proxying banking requests to the Backend (port 3001) and AI chatbot requests to the Genkit Agent (port 3002). Run with: `npm run frontend`.
 
 #### `mcp-server/` (The Tool Protocol Layer)
 This translates between **AI / MCP protocol** and your **backend API**.
 * Each tool takes a structured `Zod` schema.
 * When an AI requests `execute_transfer`, the tool calls `POST /api/transfers` on the backend and returns the JSON result back to the AI.
-* Exports both a Genkit MCP server and a standard MCP SDK server.
+* Exports both a Genkit MCP server (`npm run mcp:genkit`) and a standard MCP SDK server (`npm run mcp:std`).
 
-#### `genkit-app/` (The AI Agent & Workflows)
+#### `genkit-app/` (The AI Agent Microservice - Port 3002)
 This is where **Firebase Genkit** lives:
+* **`server.js`**: Dedicated AI Agent HTTP microservice running on `http://localhost:3002`. Exposes `POST /api/chat`. Run with: `npm run agent`.
 * **`genkit.js`**: Initializes the single shared `ai` instance with optional Gemini plugin.
 * **`agent.js`**: Defines the `walletAssistantFlow` (the conversational agent) plus direct flows (`transferFundsFlow`, `initiateTopupFlow`, `checkBalanceFlow`).
 
@@ -110,16 +121,17 @@ This is where **Firebase Genkit** lives:
 
 ## 3. How to Run Each Component Independently
 
-Each layer can be run independently to test or integrate into different architectures:
+Each layer runs on its own independent port with its own dedicated command:
 
-### 1. Run the Devfest Wallet Mobile Web App & Backend API
-A responsive mobile web application to demonstrate the AI chatbot with the Google/Devfest theme (White, Blue, Red, Yellow, Green):
-```bash
-npm run web
-# or
-npm run backend
-```
-* **URL**: Open **`http://localhost:3001`** in any web browser (or mobile browser).
+| Component | Port | Command | Description |
+| :--- | :--- | :--- | :--- |
+| **Core Banking API** | `3001` | `npm run backend` | Pure REST API (wallets, transfers, topups, ledger) |
+| **Genkit MCP Agent** | `3002` | `npm run agent` | Dedicated AI Agent Service (Genkit Flow + MCP tools) |
+| **Frontend Web App** | `3000` | `npm run frontend` | Devfest Wallet Mobile Web UI (`http://localhost:3000`) |
+| **All Services** | `3000-3002` | `npm run all` | Starts all 3 microservices concurrently in one terminal |
+| **Standard MCP (stdio)** | — | `npm run mcp:std` | Connects to Claude Desktop, Cursor, Antigravity |
+| **Genkit Dev UI** | `4000` | `npm run ui` | Interactive visual developer playground for tools & flows |
+| **Terminal Chat** | CLI | `npm run chat` | Interactive command-line chat session |
 * **Key Features**:
   * **Phone Simulator / Full Width**: Switch between mobile phone frame and full-width layout.
   * **Interactive AI Assistant**: Chat with the assistant to check balances, transfer money, inquire about top-ups, and test safety prompts.
