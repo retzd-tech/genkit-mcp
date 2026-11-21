@@ -176,9 +176,23 @@ This executes 7 real-life payment situations and prints a financial reconciliati
 
 ---
 
+### Step 4.6: Launch the Devfest Wallet Mobile Web App (Web Mobile Mode)
+To experience the wallet just like an end-user on a smartphone:
+
+```bash
+# Recommended: Start all 3 microservices at once (Backend + Agent + Frontend)
+npm start
+# (or: npm run all)
+```
+*(Alternatively, run `npm run web` or `npm run frontend` on port 3000 alongside the backend on 3001 and agent on 3002).*
+
+Open **`http://localhost:3000`** in your browser. You get an interactive mobile phone interface with live balance cards, quick prompt chips, real-time ledger updates, and visual MCP tool execution pills!
+
+---
+
 ## 5. How to Try Every Single Feature (Hands-On Tour)
 
-Here is how you can test all 7 features across both the **Genkit Web UI** (`localhost:4000`) and the **Terminal Chat** (`npm run chat`):
+Here is how you can test all 7 features across the **Devfest Wallet Mobile Web App** (`localhost:3000`), the **Genkit Web UI** (`localhost:4000`), and the **Terminal Chat** (`npm run chat`):
 
 ---
 
@@ -291,9 +305,13 @@ Alice is back to `$1,250.00`, Bob is back to `$320.50`, and test transfers are c
 
 | Command | What It Does | When to Use |
 | :--- | :--- | :--- |
+| `npm start` *(or `npm run all`)* | Starts all 3 microservices concurrently (Backend :3001, Agent :3002, Frontend :3000) | Recommended: Complete full-stack local environment with one command |
+| `npm run web` *(or `npm run frontend`)* | Starts the Devfest Wallet Mobile Web App on `http://localhost:3000` | Testing the end-user smartphone experience with chat, cards, and tool pills |
 | `npm run ui` | Starts backend + Genkit Web UI on `http://localhost:4000` | Recommended for visual testing, inspection, and traces |
 | `npm run chat` | Interactive AI chat in your terminal | Quick conversational testing |
 | `npm run backend` | Starts ONLY the Express REST API on `localhost:3001` | When testing the backend independently with cURL/Postman |
+| `npm run agent` | Starts ONLY the Genkit Agent Service on `localhost:3002` | When testing the independent AI agent service |
+| `npm run inspect` | Starts official MCP Inspector on `http://localhost:5173` | Inspecting raw MCP JSON-RPC schemas and tools |
 | `npm run mcp:std` | Runs the standard MCP Server on `stdio` | Connecting to Claude Desktop, Cursor, or Antigravity |
 | `npm run e2e` | Runs the automated 7-scenario end-to-end test walkthrough | Automated regression test of all payment use cases |
 | `npm run reset-db` | Restores `wallet-db.json` to initial seed values | Whenever you want a fresh start |

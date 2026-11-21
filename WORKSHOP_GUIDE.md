@@ -499,6 +499,23 @@ To restore clean seed accounts at any time:
 npm run reset-db
 ```
 
+### Task 5.4: Test on Devfest Wallet Mobile Web App (Web Mobile Mode)
+Experience the full end-user interface simulating a native smartphone digital wallet:
+```bash
+# Recommended: Start all 3 microservices concurrently (Backend + Agent + Frontend)
+npm start
+# (or: npm run all)
+```
+*(Alternatively, run `npm run web` or `npm run frontend` on port 3000 alongside the backend on 3001 and agent on 3002).*
+
+Open **`http://localhost:3000`** in your browser:
+* **Interactive Mobile Mockup**: Realistic phone frame with status bar, dynamic island, and responsive layout.
+* **Live Wallet Card**: Real-time balance for Alice (`$1,250.00`), account tier (`Premium`), and status pill (`Active`).
+* **Quick Prompt Chips**: Test common financial tasks in one click (**💰 Balance**, **💸 Send $35 to Bob**, **➕ Top Up $50 (VA)**, **🔍 Check TRF-1001**, **📜 History**, and **⚠️ Test Guardrail**).
+* **Live Debit/Credit Reflection**: Watch the card balance decrement instantly in real time when you send $35 to Bob!
+* **Visual MCP Tool Pills**: Click the expandable tool pill under any assistant bubble to inspect the raw MCP tool execution arguments and backend response.
+* **User Switching & Reset**: Switch between Alice, Bob, and Charlie via the dropdown, or hit the **🔄** button to reset balances back to seed data.
+
 ---
 
 ## Workshop Summary & Key Takeaways
