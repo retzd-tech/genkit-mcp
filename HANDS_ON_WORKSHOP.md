@@ -177,6 +177,38 @@ npm run e2e
 
 ---
 
+### Step 2.6: Launch the Devfest Wallet Mobile Web App (Web Mobile Mode)
+Experience the full end-user interface simulating a native smartphone digital wallet on `http://localhost:3000`:
+```bash
+# Recommended: Start all 3 microservices concurrently (Backend + Agent + Frontend)
+npm start
+# (or: npm run all)
+```
+*(Alternatively, if running services in separate terminal tabs, launch `npm run backend` on port 3001, `npm run agent` on port 3002, and `npm run web` or `npm run frontend` on port 3000).*
+
+**Terminal Output (`npm start`):**
+```
+══════════════════════════════════════════════════════════════════════
+  🚀 Starting Devfest Wallet Microservices
+     1. Core Banking API   -> http://localhost:3001
+     2. Genkit MCP Agent   -> http://localhost:3002
+     3. Frontend Mobile UI -> http://localhost:3000
+══════════════════════════════════════════════════════════════════════
+[Backend] [Wallet Backend] Express server running on http://localhost:3001
+[Agent] [Genkit Agent] Express server running on http://localhost:3002
+[Frontend] [Devfest Wallet] Frontend UI running on http://localhost:3000
+```
+
+Open **`http://localhost:3000`** in your browser:
+* **Mobile Frame View**: A phone device mockup with status bar, dynamic island, and responsive container.
+* **Live Wallet Card**: Shows active account holder name, avatar, real-time balance, status pill (`Active` / `Frozen`), and tier (`Premium` / `Standard`).
+* **Quick Prompt Chips**: Instant one-click triggers for balance, sending money, top-up, transfer status check, history, and intent guardrails.
+* **Interactive Chat Stream**: Send natural language inquiries to the Genkit Agent.
+* **Visual MCP Tool Pills**: Inspect which MCP tool was invoked, its input parameters, and output payload directly under each assistant reply!
+* **Account Switcher & Database Reset**: Test multiple personas (Alice, Bob, Charlie) and restore seed balances with the 🔄 button.
+
+---
+
 ## Part 3: Code Exercises — Building the MCP & Genkit Architecture (60 mins)
 
 If you are on the `workshop-starter` branch (`git checkout workshop-starter`), follow these guided exercises step-by-step. Each exercise in this guide directly corresponds to a `// TODO [Exercise X.Y]` marker in the starter codebase.
@@ -1169,9 +1201,21 @@ npm run e2e
 
 ## Part 4: Comprehensive Feature Tour — Testing All 7 Scenarios (35 mins)
 
-Test all 7 real-life situations using both the **Genkit Web UI** (`localhost:4000`) and the **Interactive Chat** (`npm run chat`):
+You can test all 7 real-life payment situations across three different interfaces:
+1. **Devfest Wallet Mobile Web App (`http://localhost:3000`)**: The visual mobile app UI (`npm run web` or `npm start`) featuring an interactive phone mockup, live wallet cards, quick prompt chips, real-time balance updates, and expandable MCP tool inspection pills.
+2. **Firebase Genkit Developer UI (`http://localhost:4000`)**: The developer workbench (`npm run ui`) for raw tool execution and execution trace DAG inspection.
+3. **Interactive Terminal Chat (`npm run chat`)**: Fast conversational prompt testing directly in your CLI.
+
+---
 
 ### Scenario 1: Check Wallet Balance & Profile
+
+* **In Web Mobile Mode (`http://localhost:3000`)**:
+  1. Open `http://localhost:3000` in your web browser (started via `npm start` or `npm run web`).
+  2. Observe the wallet card at the top: Displays **Alice Smith**, Available Balance **`$1,250.00 USD`**, status **`Active`**, and tier **`Premium`**.
+  3. Click the **💰 Balance** quick action chip (or type `"What is my current balance?"` or `"Berapa sisa saldo saya?"` into the chat input).
+  4. The assistant replies with Alice's balance. Notice the expandable **`get wallet balance`** tool pill right below the response — click it to see the exact input arguments (`userId: "user_101"`) and structured backend response!
+  5. Use the user dropdown at the top right to switch to **Bob Jones** or **Charlie Brown (Frozen)** and click the balance chip again to observe personalized responses for each user.
 * **In Genkit Web UI (`localhost:4000`)**:
   1. Click **Tools** in sidebar $\rightarrow$ Select `get_wallet_balance`.
   2. In `userId`, type `user_101`. Click **Run Tool**.
@@ -1183,27 +1227,49 @@ Test all 7 real-life situations using both the **Genkit Web UI** (`localhost:400
 ---
 
 ### Scenario 2: Inquire Transfer Status (3 Cases)
-* **Case 2A: Completed Transfer (`TRF-1001`)**:
-  * Chat: `"Check status of transfer TRF-1001"`
-  * Result: `✅ COMPLETED` — Alice sent $100 to Bob for "Dinner split".
-* **Case 2B: Pending Transfer (`TRF-1002`)**:
-  * Chat: `"Can you check transfer TRF-1002?"`
-  * Result: `⏳ PENDING` — Bob sent $25 to Alice for "Coffee reimbursement".
-* **Case 2C: Failed Transfer with Compliance Reason (`TRF-1003`)**:
-  * Chat: `"Why did transfer TRF-1003 fail?"`
-  * Result: `❌ FAILED` — Failure Reason: *"Recipient account is FROZEN by compliance"*.
+
+* **In Web Mobile Mode (`http://localhost:3000`)**:
+  * **Case 2A: Completed Transfer (`TRF-1001`)**:
+    * Click the **🔍 Check TRF-1001** chip (or type `"Check status of transfer TRF-1001"`).
+    * Result: `✅ COMPLETED` — Alice sent $100 to Bob for "Dinner split". Expand the `check transfer status` tool pill to see the raw tool execution metadata.
+  * **Case 2B: Pending Transfer (`TRF-1002`)**:
+    * Type: `"Can you check transfer TRF-1002?"`
+    * Result: `⏳ PENDING` — Bob sent $25 to Alice for "Coffee reimbursement".
+  * **Case 2C: Failed Transfer with Compliance Reason (`TRF-1003`)**:
+    * Type: `"Why did transfer TRF-1003 fail?"`
+    * Result: `❌ FAILED` — Failure Reason: *"Recipient account is FROZEN by compliance"*.
+* **In Terminal Chat (`npm run chat`)**:
+  * Chat: `"Check status of transfer TRF-1001"` $\rightarrow$ `✅ COMPLETED`
+  * Chat: `"Can you check transfer TRF-1002?"` $\rightarrow$ `⏳ PENDING`
+  * Chat: `"Why did transfer TRF-1003 fail?"` $\rightarrow$ `❌ FAILED`
 
 ---
 
 ### Scenario 3: Check Top-Up Status
-* Chat: `"Check status of topup TOP-5001"`
+
+* **In Web Mobile Mode (`http://localhost:3000`)**:
+  * Type: `"Check status of topup TOP-5001"`
   * Result: `✅ SUCCESS` — $200.00 via Virtual Account `88019283746` (Chase Bank).
-* Chat: `"What is happening with topup TOP-5002?"`
+  * Type: `"What is happening with topup TOP-5002?"`
   * Result: `⏳ PENDING` — $50.00 via Credit Card.
+* **In Terminal Chat (`npm run chat`)**:
+  * Chat: `"Check status of topup TOP-5001"` $\rightarrow$ `✅ SUCCESS`
+  * Chat: `"What is happening with topup TOP-5002?"` $\rightarrow$ `⏳ PENDING`
 
 ---
 
 ### Scenario 4: Execute Live Money Transfer
+
+* **In Web Mobile Mode (`http://localhost:3000`)**:
+  1. Click the **💸 Send $35 to Bob** chip (or type `"Transfer $35 to Bob for lunch"`).
+  2. Watch the live interactive UI update:
+     * The Genkit Agent parses the prompt and invokes the `execute_transfer` MCP tool.
+     * **Instant Real-Time Balance Update**: The wallet card at the top instantly decrements from `$1,250.00` to `$1,215.00`!
+     * A toast notification pops up confirming the transfer.
+     * Click the **`execute transfer`** tool pill under the response to inspect the atomic transaction payload, sender ID, recipient ID, and assigned `TRF-...` reference ID.
+  3. **Test Safety Guardrail**:
+     * Click the **⚠️ Test Guardrail** chip (or type `"Transfer to Bob"`).
+     * The assistant halts execution and responds with: *"How much would you like to transfer, and to whom? Please specify the amount and recipient (e.g., 'Transfer $50 to Bob')."* No unauthorized debit occurs without an explicit amount!
 * **In Genkit Web UI (`localhost:4000`)**:
   1. Click **Flows** in sidebar $\rightarrow$ Select `walletAssistantFlow`.
   2. Input:
@@ -1216,41 +1282,61 @@ Test all 7 real-life situations using both the **Genkit Web UI** (`localhost:400
   3. Click **Run**.
   4. Alice's balance decreases to `$1,200.00`.
   5. Click **View Trace**: Visually inspect the execution DAG where the flow selected and called `execute_transfer`!
-* **In Terminal Chat**:
+* **In Terminal Chat (`npm run chat`)**:
   * Chat: `"Transfer $35 to Bob for lunch"`
   * Chat: `"Transfer to Bob"` *(Notice the guardrail asking for the amount!)*
 
 ---
 
 ### Scenario 5: Initiate a New Top-Up via Virtual Account
-* **In Genkit Web UI**:
+
+* **In Web Mobile Mode (`http://localhost:3000`)**:
+  1. Click the **➕ Top Up $50 (VA)** chip (or type `"I want to top up $75 using virtual account"`).
+  2. The assistant invokes `initiate_topup` and renders:
+     * Generated unique Virtual Account Number (e.g., `88019283746`).
+     * Expiration timestamp (valid for 24 hours).
+     * Bank transfer payment instructions.
+* **In Genkit Web UI (`localhost:4000`)**:
   1. Click **Tools** $\rightarrow$ `initiate_topup`.
   2. Input: `userId: user_101`, `amount: 150`, `paymentMethod: VIRTUAL_ACCOUNT`. Click **Run Tool**.
   3. Generates a unique Virtual Account Number (`8801xxxxxxx`) valid for 24 hours.
-* **In Terminal Chat**:
+* **In Terminal Chat (`npm run chat`)**:
   * Chat: `"I want to top up $75 using virtual account"`
   * Assistant returns payment instructions with Virtual Account number.
 
 ---
 
 ### Scenario 6: Inquire Transaction History
-* Chat: `"Show my recent transaction history"`
-* Chat: `"What was my latest transfer?"`
-* Displays recent transactions with directional badges (`📤 Sent`, `📥 Received`, `💳 Top-Up`).
+
+* **In Web Mobile Mode (`http://localhost:3000`)**:
+  1. Click the **📜 History** chip (or type `"Show my recent transaction history"`).
+  2. Assistant invokes `get_transaction_history` and displays a formatted ledger stream showing:
+     * `📤 Sent`: Recent transfers (including the $35 lunch transfer to Bob just executed in Scenario 4!).
+     * `📥 Received`: Incoming transfers with status badges.
+     * `💳 Top-Up`: Top-up transactions.
+* **In Terminal Chat (`npm run chat`)**:
+  * Chat: `"Show my recent transaction history"`
+  * Chat: `"What was my latest transfer?"`
+  * Displays recent transactions with directional badges (`📤 Sent`, `📥 Received`, `💳 Top-Up`).
 
 ---
 
 ### Scenario 7: Reset Database to Clean State
+
 Transfers and top-ups mutate `backend/data/wallet-db.json`. To restore initial balances:
-```bash
-npm run reset-db
-```
-**Output:**
-```
-[DB] Resetting wallet database to initial seed data...
-[DB] Database reset successfully! Initial balances and transactions restored.
-```
-Alice is restored to `$1,250.00`, Bob to `$320.50`, and Charlie to `$45.00`.
+
+* **In Web Mobile Mode (`http://localhost:3000`)**:
+  1. Click the **🔄** reset button in the top navigation bar (next to the user avatar and dropdown).
+  2. The button rotates smoothly, a toast notification confirms `Database reset to seed balances`, and the wallet card instantly resets back to seed balance (`$1,250.00` for Alice, `$320.50` for Bob, and `$45.00` for Charlie).
+* **In Terminal (CLI)**:
+  ```bash
+  npm run reset-db
+  ```
+  **Output:**
+  ```
+  [DB] Resetting wallet database to initial seed data...
+  [DB] Database reset successfully! Initial balances and transactions restored.
+  ```
 
 ---
 
@@ -1260,13 +1346,16 @@ Alice is restored to `$1,250.00`, Bob to `$320.50`, and Charlie to `$45.00`.
 
 | Command | Purpose | When to Use |
 | :--- | :--- | :--- |
-| `npm run web` | Starts Devfest Wallet Mobile Web App + Backend API on `http://localhost:3001` | Interactive visual mobile demonstration of the chatbot, cards, and live ledger |
-| `npm run e2e` | Runs the automated 7-scenario test suite | Fast regression test of all payment use cases |
-| `npm run chat` | Interactive AI terminal assistant | Conversational testing and prompt evaluation in terminal |
-| `npm run ui` | Starts backend + Genkit Web UI on `http://localhost:4000` | Visual tool execution, flow testing, and trace inspection |
-| `npm run backend` | Starts the Express REST API & Mobile Web App on `localhost:3001` | Hosting backend and web client |
-| `npm run mcp:std` | Starts the standard MCP Server on `stdio` | Connecting to Claude Desktop, Cursor, or Antigravity |
-| `npm run reset-db` | Restores `wallet-db.json` back to seed values | Wiping test transactions for a fresh baseline |
+| `npm start` *(or `npm run all`)* | Starts all 3 microservices concurrently (Backend :3001, Agent :3002, Frontend :3000) | Recommended: Complete full-stack local environment with one command |
+| `npm run web` *(or `npm run frontend`)* | Starts the Devfest Wallet Mobile Web App on `http://localhost:3000` | Testing the end-user mobile experience with chat, cards, chips, and tool inspection |
+| `npm run backend` | Starts the Core Banking REST API on `http://localhost:3001` | Independent banking microservice and system of record |
+| `npm run agent` | Starts the Genkit AI MCP Agent Service on `http://localhost:3002` | Independent conversational AI microservice proxying MCP tools |
+| `npm run ui` | Starts backend + Genkit Developer Web UI on `http://localhost:4000` | Visual tool execution, flow testing, and trace inspection |
+| `npm run inspect` *(or `npm run mcp:inspect`)* | Starts the official Model Context Protocol Inspector on `http://localhost:5173` | Inspecting raw JSON-RPC schemas, arguments, and tools in isolation |
+| `npm run chat` | Interactive AI terminal assistant in CLI | Rapid conversational testing and prompt evaluation in terminal |
+| `npm run mcp:std` | Starts the standard MCP Server on `stdio` | Connecting to Claude Desktop, Cursor IDE, or Google Antigravity |
+| `npm run e2e` *(or `npm test`)* | Runs the automated 7-scenario end-to-end regression test suite | Fast verification of all payment use cases and balance reconciliation |
+| `npm run reset-db` | Restores `wallet-db.json` back to initial seed data | Wiping test transactions for a fresh baseline |
 
 ---
 
